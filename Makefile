@@ -3,7 +3,7 @@ NAME=	readnfccc
 
 SRC=	readnfccc.c
 
-LIBS=	-L./libnfc -lnfc
+LIBS=	-lnfc
 
 OBJ=$(SRC:.c=.o)
 
