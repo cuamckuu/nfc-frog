@@ -41,31 +41,32 @@ static const byte_t START_14443A[] = {0x4A, 0x01, 0x00};
 static const byte_t SELECT_APP[] = {0x40,0x01,0x00,0xA4,0x04,0x00,0x07,0xA0,0x00,0x00,0x00,0x42,0x10,0x10,0x00};
 static const byte_t READ_RECORD_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x02, 0x0C, 0x00, 0x00};
 static const byte_t READ_RECORD_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x14, 0x00, 0x00};
-static const byte_t READ_PAYLOG_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x8C, 0x00, 0x00};
-static const byte_t READ_PAYLOG_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x5C, 0x00, 0x00};
+static byte_t READ_PAYLOG_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x8C, 0x00, 0x00};
+static byte_t READ_PAYLOG_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x5C, 0x00, 0x00};
 
 static nfc_device* pnd;
 
 static void sig_handler(int signum) {
   if (signum == SIGINT) {
-    if (pnd)
-        nfc_disconnect(pnd);
+
+    /* if (pnd) */
+    /*   nfc_disconnect(pnd); */
+
     exit(EXIT_SUCCESS);
   }
 }
 
-static void show(size_t recvlg, byte_t *recv)
+static void show(const size_t recvlg, const byte_t *recv)
 {
-  size_t i;
 
   printf("< ");
-  for (i = 0; i < recvlg; i++) {
+  for (size_t i = 0; i < recvlg; i++) {
     printf("%02x ", (unsigned int) recv[i]);
   }
   printf("\n");
 
   printf("< ");
-  for (i = 0; i < recvlg; i++) {
+  for (size_t i = 0; i < recvlg; i++) {
     if (isprint(recv[i]))
       printf("%c ", recv[i]);
     else
@@ -93,13 +94,13 @@ static void	init() {
   }
 }
 
-static void	look_for_cardholder(const byte_t* res, size_t size) {
+static void	look_for_cardholder(const byte_t* res, const size_t size) {
 
   static byte_t buff[MAX_FRAME_LEN];
 
-  for (i = 0; i < (unsigned int) (size-1); i++) {
+  for (size_t i = 0; i < (unsigned int) (size-1); i++) {
     if (res[0] == 0x5f && res[1] == 0x20) {
-      strncpy(buff, res+3, (int) res[2]);
+      memcpy(buff, res+3, res[2]);
       buff[(int) res[2]] = 0;
       printf("Cardholder name: %s\n", buff);
       break;
@@ -108,28 +109,26 @@ static void	look_for_cardholder(const byte_t* res, size_t size) {
   }  
 }
 
-static void	look_for_pan_and_expire_date(const byte_t* res, size_t size, byte_t flag_start) {
+static void	look_for_pan_and_expire_date(const byte_t* res, const size_t size, const byte_t flag_start) {
 
   static byte_t buff[MAX_FRAME_LEN];
-  unsigned int expiry;
-  size_t i, j;
 
-  for (i = 0; i < (unsigned int) size-1; i++) {
+  for (size_t i = 0; i < (unsigned int) size-1; i++) {
     if (*res == flag_start && *(res+1) == 0x57) {
-      strncpy(buff, res+3, 13);
+      memcpy(buff, res+3, 13);
       buff[11] = 0;
       printf("PAN:");
 
-      for (j = 0; j < 8; j++) {
+      for (size_t j = 0; j < 8; j++) {
 	if (j % 2 == 0)
 	  printf(" ");
-	if (MASKED & j >= 2 & j<= 5)
+	if (MASKED && j >= 2 && j<= 5)
 	  printf("**");
 	else
 	  printf("%02x", buff[j] & 0xff);
       }
       printf("\n");
-      expiry = (buff[10] + (buff[9] << 8) + (buff[8] << 16)) >> 4;
+      unsigned int expiry = (buff[10] + (buff[9] << 8) + (buff[8] << 16)) >> 4;
       printf("Expiration date: %02x/20%02x\n\n", (expiry & 0xff), ((expiry >> 8) & 0xff));
       break;
     }
@@ -137,35 +136,42 @@ static void	look_for_pan_and_expire_date(const byte_t* res, size_t size, byte_t 
   }
 }
 
-int	main(int argc, char **argv) {
+int	main(__attribute__((unused)) int argc,
+	     __attribute__((unused)) char **argv) {
 
   byte_t abtRx[MAX_FRAME_LEN];
-  size_t szRx;
+  int szRx;
 
-  unsigned char *res, amount[10], msg[100];
-  unsigned int i;
+  unsigned char *res;
+  char amount[10], msg[100];
 
   init();
 
   signal(SIGINT, sig_handler);
   while (1) {
 
-    szRx = sizeof(abtRx);
-    if (!pn53x_transceive(pnd, START_14443A, sizeof(START_14443A), abtRx, &szRx, NULL)) {
+    if (!(szRx = pn53x_transceive(pnd,
+				  START_14443A, sizeof(START_14443A),
+				  abtRx, sizeof(abtRx),
+				  NULL))) {
       nfc_perror(pnd, "START_14443A");
       return 1;
     }
     //show(szRx, abtRx);
 
-    szRx = sizeof(abtRx);
-    if (!pn53x_transceive(pnd, SELECT_APP, sizeof(SELECT_APP), abtRx, &szRx, NULL)) {
+    if (!(szRx = pn53x_transceive(pnd,
+				  SELECT_APP, sizeof(SELECT_APP),
+				  abtRx, sizeof(abtRx),
+				  NULL))) {
       nfc_perror(pnd, "SELECT_APP");
       return 1;
     }
     //show(szRx, abtRx);
 
-    szRx = sizeof(abtRx);
-    if (!pn53x_transceive(pnd, READ_RECORD_VISA, sizeof(READ_RECORD_VISA), abtRx, &szRx, NULL)) {
+    if (!(szRx = pn53x_transceive(pnd,
+				  READ_RECORD_VISA, sizeof(READ_RECORD_VISA),
+				  abtRx, sizeof(abtRx),
+				  NULL))) {
       nfc_perror(pnd, "READ_RECORD");
       return 1;
     }
@@ -177,8 +183,10 @@ int	main(int argc, char **argv) {
     look_for_pan_and_expire_date(abtRx, szRx, 0x4d);
 
 
-    szRx = sizeof(abtRx);
-    if (!pn53x_transceive(pnd, READ_RECORD_MC, sizeof(READ_RECORD_MC), abtRx, &szRx, NULL)) {
+    if (!(szRx = pn53x_transceive(pnd,
+				  READ_RECORD_MC, sizeof(READ_RECORD_MC),
+				  abtRx, sizeof(abtRx),
+				  NULL))) {
       nfc_perror(pnd, "READ_RECORD");
       return 1;
     }
@@ -190,10 +198,12 @@ int	main(int argc, char **argv) {
     look_for_pan_and_expire_date(abtRx, szRx, 0x9c);
 
 
-    for (i = 1; i <= 20; i++) {
+    for (byte_t i = 1; i <= 20; i++) {
       READ_PAYLOG_VISA[4] = i;
-      szRx = sizeof(abtRx);
-      if (!pn53x_transceive(pnd, READ_PAYLOG_VISA, sizeof(READ_PAYLOG_VISA), abtRx, &szRx, NULL)) {
+      if (!(szRx = pn53x_transceive(pnd,
+				    READ_PAYLOG_VISA, sizeof(READ_PAYLOG_VISA),
+				    abtRx, sizeof(abtRx),
+				    NULL))) {
 	nfc_perror(pnd, "READ_RECORD");
 	return 1;
       }
@@ -218,10 +228,12 @@ int	main(int argc, char **argv) {
       }
     }
 
-    for (i = 1; i <= 20; i++) {
+    for (byte_t i = 1; i <= 20; i++) {
       READ_PAYLOG_MC[4] = i;
-      szRx = sizeof(abtRx);
-      if (!pn53x_transceive(pnd, READ_PAYLOG_MC, sizeof(READ_PAYLOG_MC), abtRx, &szRx, NULL)) {
+      if (!(szRx = pn53x_transceive(pnd,
+				    READ_PAYLOG_MC, sizeof(READ_PAYLOG_MC),
+				    abtRx, sizeof(abtRx),
+				    NULL))) {
 	nfc_perror(pnd, "READ_RECORD");
 	return 1;
       }
@@ -251,4 +263,5 @@ int	main(int argc, char **argv) {
 
   return 0;
 }
+
 

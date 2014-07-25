@@ -7,8 +7,12 @@ LIBS=	-lnfc
 
 OBJ=$(SRC:.c=.o)
 
+CC=	gcc
+
+CFLAGS+=	-std=gnu99 -W -Wall -pedantic
+
 $(NAME): $(OBJ)
-	gcc -o $(NAME) $(OBJ) $(LIBS)
+	$(CC) -o $(NAME) $(OBJ) $(LIBS)
 
 all: $(NAME)
 
