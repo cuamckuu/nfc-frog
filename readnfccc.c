@@ -20,6 +20,7 @@ $ gcc readnfccc.c -lnfc -o readnfccc
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <signal.h>
 
 #include <nfc/nfc.h>
 
@@ -36,6 +37,16 @@ static const byte_t READ_RECORD_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x02, 0x0C, 0x
 static const byte_t READ_RECORD_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x14, 0x00, 0x00};
 static const byte_t READ_PAYLOG_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x8C, 0x00, 0x00};
 static const byte_t READ_PAYLOG_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x5C, 0x00, 0x00};
+
+static nfc_device* pnd;
+
+static void sig_handler(int signum) {
+  if (signum == SIGINT) {
+    if (pnd)
+        nfc_disconnect(pnd);
+    exit(EXIT_SUCCESS);
+  }
+}
 
 static void show(size_t recvlg, byte_t *recv)
 {
@@ -57,9 +68,9 @@ static void show(size_t recvlg, byte_t *recv)
   printf("\n");
 }
 
-static nfc_device*	init() {
+static void	init() {
+
   nfc_context *context;
-  nfc_device* pnd;
 
   nfc_init(&context);
   if (context == NULL) {
@@ -74,8 +85,6 @@ static nfc_device*	init() {
     nfc_exit(context);
     exit(EXIT_FAILURE);
   }
-
-  return pnd;
 }
 
 static void	look_for_cardholder(const byte_t* res, size_t size) {
@@ -130,8 +139,9 @@ int	main(int argc, char **argv) {
   unsigned char *res, amount[10], msg[100];
   unsigned int i;
 
-  nfc_device* pnd = init();
+  init();
 
+  signal(SIGINT, sig_handler);
   while (1) {
 
     szRx = sizeof(abtRx);
@@ -232,8 +242,6 @@ int	main(int argc, char **argv) {
 
     printf("-------------------------\n");
   }
-
-  nfc_disconnect(pnd);
 
   return 0;
 }
