@@ -1,4 +1,10 @@
 /*
+  File edited by Maxime Marches and Thomas Brunner for the requirements of
+  their MSc Project at the University of Kent, Canterbury, UK
+
+  Please refer to the original header below for more information
+ */
+/*
 
 readnfccc - by Renaud Lifchitz (renaud.lifchitz@bt.com)
 License: distributed under GPL version 3 (http://www.gnu.org/licenses/gpl.html)
