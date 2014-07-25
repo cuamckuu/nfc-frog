@@ -43,6 +43,7 @@ static const byte_t READ_RECORD_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x02, 0x0C, 0x
 static const byte_t READ_RECORD_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x14, 0x00, 0x00};
 static byte_t READ_PAYLOG_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x8C, 0x00, 0x00};
 static byte_t READ_PAYLOG_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x5C, 0x00, 0x00};
+static byte_t READ_PAYLOG_LEN = 8;
 
 static nfc_device* pnd;
 
@@ -59,18 +60,18 @@ static void sig_handler(int signum) {
 static void show(const size_t recvlg, const byte_t *recv)
 {
 
-  printf("< ");
+  printf("HEXA < %d < ", recvlg);
   for (size_t i = 0; i < recvlg; i++) {
     printf("%02x ", (unsigned int) recv[i]);
   }
   printf("\n");
 
-  printf("< ");
+  printf("CHAR < ");
   for (size_t i = 0; i < recvlg; i++) {
     if (isprint(recv[i]))
       printf("%c ", recv[i]);
     else
-      printf("-");
+      printf(".");
   }
   printf("\n");
 }
@@ -94,14 +95,41 @@ static void	init() {
   }
 }
 
+static int	start_and_select_app() {
+  byte_t abtRx[MAX_FRAME_LEN];
+  int szRx;
+
+  if (!(szRx = pn53x_transceive(pnd,
+				START_14443A, sizeof(START_14443A),
+				abtRx, sizeof(abtRx),
+				NULL))) {
+    nfc_perror(pnd, "START_14443A");
+    return 1;
+  }
+  puts("Answer from START_14443A");
+  show(szRx, abtRx);
+
+  if (!(szRx = pn53x_transceive(pnd,
+				SELECT_APP, sizeof(SELECT_APP),
+				abtRx, sizeof(abtRx),
+				NULL))) {
+    nfc_perror(pnd, "SELECT_APP");
+    return 1;
+  }
+  puts("Answer from SELECT_APP");
+  show(szRx, abtRx);
+
+  return 0;
+}
+
 static void	look_for_cardholder(const byte_t* res, const size_t size) {
 
   static byte_t buff[MAX_FRAME_LEN];
 
-  for (size_t i = 0; i < (unsigned int) (size-1); i++) {
+  for (size_t i = 0; i < size - 2; i++) {
     if (res[0] == 0x5f && res[1] == 0x20) {
       memcpy(buff, res+3, res[2]);
-      buff[(int) res[2]] = 0;
+      buff[res[2]] = 0;
       printf("Cardholder name: %s\n", buff);
       break;
     }
@@ -113,8 +141,8 @@ static void	look_for_pan_and_expire_date(const byte_t* res, const size_t size, c
 
   static byte_t buff[MAX_FRAME_LEN];
 
-  for (size_t i = 0; i < (unsigned int) size-1; i++) {
-    if (*res == flag_start && *(res+1) == 0x57) {
+  for (size_t i = 0; i < size-1; i++) {
+    if (res[0] == flag_start && res[1] == 0x57) {
       memcpy(buff, res+3, 13);
       buff[11] = 0;
       printf("PAN:");
@@ -125,15 +153,63 @@ static void	look_for_pan_and_expire_date(const byte_t* res, const size_t size, c
 	if (MASKED && j >= 2 && j<= 5)
 	  printf("**");
 	else
-	  printf("%02x", buff[j] & 0xff);
+	  printf("%02x", buff[j]);
       }
       printf("\n");
-      unsigned int expiry = (buff[10] + (buff[9] << 8) + (buff[8] << 16)) >> 4;
+
+      unsigned int expiry = (buff[10] | (buff[9] << 8) | (buff[8] << 16)) >> 4;
       printf("Expiration date: %02x/20%02x\n\n", (expiry & 0xff), ((expiry >> 8) & 0xff));
       break;
     }
     res++;
   }
+}
+
+static int	read_paylog(byte_t read_paylog[MAX_FRAME_LEN]) {
+
+  static byte_t abtRx[MAX_FRAME_LEN];
+  char amount[10], msg[100];
+  int szRx;
+
+  for (byte_t i = 1; i <= 20; i++) {
+    read_paylog[4] = i;
+    if (!(szRx = pn53x_transceive(pnd,
+				  read_paylog, READ_PAYLOG_LEN,
+				  abtRx, sizeof(abtRx),
+				  NULL))) {
+      nfc_perror(pnd, "READ_RECORD");
+      return 1;
+    }
+    if (szRx == 18) { // Non-empty transaction
+      //show(szRx, abtRx);
+
+      /* Look for date */
+      sprintf(msg, "%02x/%02x/20%02x", abtRx[14], abtRx[13], abtRx[12]);
+
+      /* Look for transaction type */
+      if (abtRx[15] == 0)
+	sprintf(msg, "%s %s", msg, "Payment");
+      else if (abtRx[15] == 1)
+	sprintf(msg, "%s %s", msg, "Withdrawal");
+
+      /* Look for amount*/
+      sprintf(amount, "%02x%02x%02x", abtRx[3], abtRx[4], abtRx[5]);
+      sprintf(msg, "%s\t%d,%02x€", msg, atoi(amount), abtRx[6]);
+
+      printf("%s\n", msg);
+    }
+  }
+
+  return 0;
+}
+
+static int	read_paylogs() {
+    // Read payloads for Visa and MC
+    if (read_paylog(READ_PAYLOG_VISA))
+      return 1;
+    if (read_paylog(READ_PAYLOG_MC))
+      return 1;
+    return 0;
 }
 
 int	main(__attribute__((unused)) int argc,
@@ -142,31 +218,14 @@ int	main(__attribute__((unused)) int argc,
   byte_t abtRx[MAX_FRAME_LEN];
   int szRx;
 
-  unsigned char *res;
-  char amount[10], msg[100];
 
   init();
 
   signal(SIGINT, sig_handler);
   while (1) {
 
-    if (!(szRx = pn53x_transceive(pnd,
-				  START_14443A, sizeof(START_14443A),
-				  abtRx, sizeof(abtRx),
-				  NULL))) {
-      nfc_perror(pnd, "START_14443A");
+    if (start_and_select_app())
       return 1;
-    }
-    //show(szRx, abtRx);
-
-    if (!(szRx = pn53x_transceive(pnd,
-				  SELECT_APP, sizeof(SELECT_APP),
-				  abtRx, sizeof(abtRx),
-				  NULL))) {
-      nfc_perror(pnd, "SELECT_APP");
-      return 1;
-    }
-    //show(szRx, abtRx);
 
     if (!(szRx = pn53x_transceive(pnd,
 				  READ_RECORD_VISA, sizeof(READ_RECORD_VISA),
@@ -197,66 +256,9 @@ int	main(__attribute__((unused)) int argc,
     /* Look for PAN & Expiry date */
     look_for_pan_and_expire_date(abtRx, szRx, 0x9c);
 
-
-    for (byte_t i = 1; i <= 20; i++) {
-      READ_PAYLOG_VISA[4] = i;
-      if (!(szRx = pn53x_transceive(pnd,
-				    READ_PAYLOG_VISA, sizeof(READ_PAYLOG_VISA),
-				    abtRx, sizeof(abtRx),
-				    NULL))) {
-	nfc_perror(pnd, "READ_RECORD");
-	return 1;
-      }
-      if (szRx == 18) { // Non-empty transaction
-	//show(szRx, abtRx);
-	res = abtRx;
-
-	/* Look for date */
-	sprintf(msg, "%02x/%02x/20%02x", res[14], res[13], res[12]);
-
-	/* Look for transaction type */
-	if (res[15] == 0)
-	  sprintf(msg, "%s %s", msg, "Payment");
-	else if (res[15] == 1)
-	  sprintf(msg, "%s %s", msg, "Withdrawal");
-
-	/* Look for amount*/
-	sprintf(amount, "%02x%02x%02x", res[3], res[4], res[5]);
-	sprintf(msg, "%s\t%d,%02x€", msg, atoi(amount), res[6]);
-
-	printf("%s\n", msg);
-      }
-    }
-
-    for (byte_t i = 1; i <= 20; i++) {
-      READ_PAYLOG_MC[4] = i;
-      if (!(szRx = pn53x_transceive(pnd,
-				    READ_PAYLOG_MC, sizeof(READ_PAYLOG_MC),
-				    abtRx, sizeof(abtRx),
-				    NULL))) {
-	nfc_perror(pnd, "READ_RECORD");
-	return 1;
-      }
-      if (szRx == 18) { // Non-empty transaction
-	//show(szRx, abtRx);
-	res = abtRx;
-
-	/* Look for date */
-	sprintf(msg, "%02x/%02x/20%02x", res[14], res[13], res[12]);
-
-	/* Look for transaction type */
-	if (res[15] == 0)
-	  sprintf(msg, "%s %s", msg, "Payment");
-	else if(res[15] == 1)
-	  sprintf(msg, "%s %s", msg, "Withdrawal");
-
-	/* Look for amount*/
-	sprintf(amount, "%02x%02x%02x", res[3], res[4], res[5]);
-	sprintf(msg, "%s\t%d,%02x€", msg, atoi(amount), res[6]);
-
-	printf("%s\n", msg);
-      }
-    }		
+    // Read payloads for Visa and MC
+    if (read_paylogs())
+      return 1;
 
     printf("-------------------------\n");
   }
