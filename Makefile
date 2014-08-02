@@ -1,15 +1,15 @@
 
-NAME=	readnfccc
+NAME=	cchack
 
-SRC=	readnfccc.c
+SRC=	cchack.cc
 
 LIBS=	-lnfc
 
-OBJ=$(SRC:.c=.o)
+OBJ=$(SRC:.cc=.o)
 
-CC=	gcc
+CC=	g++
 
-CFLAGS+=	-std=gnu99 -W -Wall -pedantic
+CFLAGS+= -W -Wall -pedantic
 
 $(NAME): $(OBJ)
 	$(CC) -o $(NAME) $(OBJ) $(LIBS)

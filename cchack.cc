@@ -12,6 +12,8 @@ $ gcc cchack.c -lnfc -o readnfccc
 
 */
 
+extern "C" {
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -20,9 +22,10 @@ $ gcc cchack.c -lnfc -o readnfccc
 
 #include <nfc/nfc.h>
 
-#define MAX_FRAME_LEN 300
+int    pn53x_transceive(struct nfc_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, const size_t szRxLen, int timeout);
+}
 
-typedef uint8_t byte_t;
+#include "cchack.h"
 
 static const byte_t START_14443A[] = {0x4A, 0x01, 0x00};
 static const byte_t SELECT_PPSE[] = {0x40,0x01,
@@ -40,7 +43,7 @@ static byte_t READ_PAYLOG_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x8C, 0x00, 0x
 static byte_t READ_PAYLOG_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x5C, 0x00, 0x00};
 static byte_t READ_PAYLOG_LEN = 8;
 
-static nfc_device* pnd;
+static struct nfc_device* pnd;
 
 static void sig_handler(int signum) {
   if (signum == SIGINT) {
@@ -52,21 +55,12 @@ static void sig_handler(int signum) {
   }
 }
 
-static void show(const size_t recvlg, const byte_t *recv)
+static void show(const size_t len, const byte_t *recv)
 {
 
-  printf("HEXA < %d < ", recvlg);
-  for (size_t i = 0; i < recvlg; i++) {
-    printf("%02x ", (unsigned int) recv[i]);
-  }
-  printf("\n");
-
-  printf("CHAR < ");
-  for (size_t i = 0; i < recvlg; i++) {
-    if (isprint(recv[i]))
-      printf("%c ", recv[i]);
-    else
-      printf(".");
+  printf("HEXA <<  ");
+  for (size_t i = 0; i < len; i++) {
+    printf("%02X ", (unsigned int) recv[i]);
   }
   printf("\n");
 }
@@ -97,7 +91,7 @@ static int	start_and_select_app() {
   if ((szRx = pn53x_transceive(pnd,
 			       START_14443A, sizeof(START_14443A),
 			       abtRx, sizeof(abtRx),
-			       NULL)) < 0) {
+			       0)) < 0) {
     nfc_perror(pnd, "START_14443A");
     return 1;
   }
@@ -107,7 +101,7 @@ static int	start_and_select_app() {
   if ((szRx = pn53x_transceive(pnd,
 			       SELECT_PPSE, sizeof(SELECT_PPSE),
 			       abtRx, sizeof(abtRx),
-			       NULL)) < 0) {
+			       0)) < 0) {
     nfc_perror(pnd, "SELECT_PPSE");
     return 1;
   }
@@ -145,7 +139,7 @@ static void	look_for_pan_and_expire_date(const byte_t* res, const size_t size, c
       for (size_t j = 0; j < 8; j++) {
 	if (j % 2 == 0)
 	  printf(" ");
-	if (MASKED && j >= 2 && j<= 5)
+	if (j >= 2 && j<= 5)
 	  printf("**");
 	else
 	  printf("%02x", buff[j]);
@@ -171,7 +165,7 @@ static int	read_paylog(byte_t read_paylog[MAX_FRAME_LEN]) {
     if ((szRx = pn53x_transceive(pnd,
 				 read_paylog, READ_PAYLOG_LEN,
 				 abtRx, sizeof(abtRx),
-				 NULL)) < 0) {
+				 0)) < 0) {
       nfc_perror(pnd, "READ_RECORD");
       return 1;
     }
@@ -222,11 +216,12 @@ int	main(__attribute__((unused)) int argc,
     if (start_and_select_app())
       goto endloop;
 
+    return 0;
 
     if ((szRx = pn53x_transceive(pnd,
 				 READ_RECORD_VISA, sizeof(READ_RECORD_VISA),
 				 abtRx, sizeof(abtRx),
-				 NULL)) < 0) {
+				 0)) < 0) {
       nfc_perror(pnd, "READ_RECORD");
       goto endloop;
     }
@@ -241,7 +236,7 @@ int	main(__attribute__((unused)) int argc,
     if ((szRx = pn53x_transceive(pnd,
 				 READ_RECORD_MC, sizeof(READ_RECORD_MC),
 				 abtRx, sizeof(abtRx),
-				 NULL)) < 0) {
+				 0)) < 0) {
       nfc_perror(pnd, "READ_RECORD");
       goto endloop;
     }
