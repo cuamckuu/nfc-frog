@@ -99,20 +99,20 @@ static int	start_and_select_app() {
   byte_t abtRx[MAX_FRAME_LEN];
   int szRx;
 
-  if (!(szRx = pn53x_transceive(pnd,
-				START_14443A, sizeof(START_14443A),
-				abtRx, sizeof(abtRx),
-				NULL))) {
+  if ((szRx = pn53x_transceive(pnd,
+			       START_14443A, sizeof(START_14443A),
+			       abtRx, sizeof(abtRx),
+			       NULL)) < 0) {
     nfc_perror(pnd, "START_14443A");
     return 1;
   }
   puts("Answer from START_14443A");
   show(szRx, abtRx);
 
-  if (!(szRx = pn53x_transceive(pnd,
-				SELECT_APP, sizeof(SELECT_APP),
-				abtRx, sizeof(abtRx),
-				NULL))) {
+  if ((szRx = pn53x_transceive(pnd,
+			       SELECT_APP, sizeof(SELECT_APP),
+			       abtRx, sizeof(abtRx),
+			       NULL)) < 0) {
     nfc_perror(pnd, "SELECT_APP");
     return 1;
   }
@@ -173,10 +173,10 @@ static int	read_paylog(byte_t read_paylog[MAX_FRAME_LEN]) {
 
   for (byte_t i = 1; i <= 20; i++) {
     read_paylog[4] = i;
-    if (!(szRx = pn53x_transceive(pnd,
-				  read_paylog, READ_PAYLOG_LEN,
-				  abtRx, sizeof(abtRx),
-				  NULL))) {
+    if ((szRx = pn53x_transceive(pnd,
+				 read_paylog, READ_PAYLOG_LEN,
+				 abtRx, sizeof(abtRx),
+				 NULL)) < 0) {
       nfc_perror(pnd, "READ_RECORD");
       return 1;
     }
@@ -225,16 +225,17 @@ int	main(__attribute__((unused)) int argc,
   while (1) {
 
     if (start_and_select_app())
-      return 1;
+      goto endloop;
 
-    if (!(szRx = pn53x_transceive(pnd,
-				  READ_RECORD_VISA, sizeof(READ_RECORD_VISA),
-				  abtRx, sizeof(abtRx),
-				  NULL))) {
+
+    if ((szRx = pn53x_transceive(pnd,
+				 READ_RECORD_VISA, sizeof(READ_RECORD_VISA),
+				 abtRx, sizeof(abtRx),
+				 NULL)) < 0) {
       nfc_perror(pnd, "READ_RECORD");
-      return 1;
+      goto endloop;
     }
-    //  show(szRx, abtRx);
+   show(szRx, abtRx);
 
     /* Look for cardholder name */
     look_for_cardholder(abtRx, szRx);
@@ -242,12 +243,12 @@ int	main(__attribute__((unused)) int argc,
     look_for_pan_and_expire_date(abtRx, szRx, 0x4d);
 
 
-    if (!(szRx = pn53x_transceive(pnd,
-				  READ_RECORD_MC, sizeof(READ_RECORD_MC),
-				  abtRx, sizeof(abtRx),
-				  NULL))) {
+    if ((szRx = pn53x_transceive(pnd,
+				 READ_RECORD_MC, sizeof(READ_RECORD_MC),
+				 abtRx, sizeof(abtRx),
+				 NULL)) < 0) {
       nfc_perror(pnd, "READ_RECORD");
-      return 1;
+      goto endloop;
     }
     //show(szRx, abtRx);
 
@@ -257,9 +258,10 @@ int	main(__attribute__((unused)) int argc,
     look_for_pan_and_expire_date(abtRx, szRx, 0x9c);
 
     // Read payloads for Visa and MC
-    if (read_paylogs())
-      return 1;
+    if (read_paylogs()) {
+    } // goto endloop;
 
+  endloop:
     printf("-------------------------\n");
   }
 
