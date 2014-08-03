@@ -11,6 +11,8 @@ CC=	g++
 
 CFLAGS+= -W -Wall -pedantic
 
+CXXFLAGS+=	-std=c++0x
+
 $(NAME): $(OBJ)
 	$(CC) -o $(NAME) $(OBJ) $(LIBS)
 

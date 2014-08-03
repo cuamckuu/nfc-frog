@@ -7,9 +7,6 @@
   Requirements:
   libnfc (>= 1.7.1)
 
-  Compilation: 
-$ gcc cchack.c -lnfc -o readnfccc
-
 */
 
 extern "C" {
@@ -25,16 +22,10 @@ extern "C" {
 int    pn53x_transceive(struct nfc_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, const size_t szRxLen, int timeout);
 }
 
-#include "cchack.h"
+#include <iostream>
 
-static const byte_t START_14443A[] = {0x4A, 0x01, 0x00};
-static const byte_t SELECT_PPSE[] = {0x40,0x01,
-				     0x00,0xA4,0x04,0x00, // CLA - INS - P1 - P2
-				     0x0e, // Length
-				     0x32,0x50,0x41,0x59,0x2e,0x53,0x59,0x53,0x2e,0x44,0x44,0x46,0x30,0x31, // 2PAY.SYS.DDF01 (PPSE)
-				     0x00};
-
-
+#include "cchack.hh"
+#include "application.hh"
 
 static const byte_t SELECT_APP[] = {0x40,0x01,0x00,0xA4,0x04,0x00,0x07,0xA0,0x00,0x00,0x00,0x42,0x10,0x10,0x00};
 static const byte_t READ_RECORD_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x02, 0x0C, 0x00, 0x00};
@@ -42,8 +33,6 @@ static const byte_t READ_RECORD_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x14, 0x00
 static byte_t READ_PAYLOG_VISA[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x8C, 0x00, 0x00};
 static byte_t READ_PAYLOG_MC[] = {0x40, 0x01, 0x00, 0xB2, 0x01, 0x5C, 0x00, 0x00};
 static byte_t READ_PAYLOG_LEN = 8;
-
-static struct nfc_device* pnd;
 
 static void sig_handler(int signum) {
   if (signum == SIGINT) {
@@ -55,12 +44,16 @@ static void sig_handler(int signum) {
   }
 }
 
-static void show(const size_t len, const byte_t *recv)
+void show(const size_t len, const byte_t *recv)
 {
 
   printf("HEXA <<  ");
   for (size_t i = 0; i < len; i++) {
-    printf("%02X ", (unsigned int) recv[i]);
+    printf("%02X", (unsigned int) recv[i]);
+  }
+  printf("\nASCII <<  ");
+  for (size_t i = 0; i < len; i++) {
+    printf("%c ", (char) (isprint(recv[i]) ? recv[i] : '.'));
   }
   printf("\n");
 }
@@ -89,7 +82,7 @@ static int	start_and_select_app() {
   int szRx;
 
   if ((szRx = pn53x_transceive(pnd,
-			       START_14443A, sizeof(START_14443A),
+			       Command::START_14443A, sizeof(Command::START_14443A),
 			       abtRx, sizeof(abtRx),
 			       0)) < 0) {
     nfc_perror(pnd, "START_14443A");
@@ -98,15 +91,13 @@ static int	start_and_select_app() {
   puts("Answer from START_14443A");
   show(szRx, abtRx);
 
-  if ((szRx = pn53x_transceive(pnd,
-			       SELECT_PPSE, sizeof(SELECT_PPSE),
-			       abtRx, sizeof(abtRx),
-			       0)) < 0) {
-    nfc_perror(pnd, "SELECT_PPSE");
-    return 1;
+  AppList list = ApplicationHelper::getAll();
+
+  std::cout << list.size() << " apps found" << std::endl;
+
+  for (Application a : list) {
+    show(7, a.aid);
   }
-  puts("Answer from SELECT_PPSE");
-  show(szRx, abtRx);
 
   return 0;
 }
