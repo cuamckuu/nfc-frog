@@ -15,31 +15,35 @@ $ gcc cchack.c -lnfc -o readnfccc
 #ifndef __CCHACK_HH__
 # define __CCHACK_HH__
 
-// Prototype to remove the warning because it is not included in nfc.h
+#include <string>
+#include <cstdio>
+
+#define DEBUG
 
 #define MAX_FRAME_LEN 300
 
-typedef uint8_t byte_t;
+typedef unsigned char byte_t;
 
-struct nfc_device* pnd;
+extern struct nfc_device* pnd;
 
 class Command {
 
 public:
   // Command list
-  static const byte_t START_14443A[];
-  static const byte_t SELECT_PPSE[];
-  static byte_t READ_RECORD[];
+  static const byte_t START_14443A[3];
+  static const byte_t SELECT_PPSE[22];
+  static const byte_t SELECT_APP_HEADER[6];
+  static const byte_t GPO_HEADER[6];
+  static byte_t READ_RECORD[7];
 
 };
 
-const byte_t Command::START_14443A[] = {0x4A, 0x01, 0x00};
-const byte_t Command::SELECT_PPSE[] = {0x40,0x01,
-				       0x00,0xA4,0x04,0x00, // CLA - INS - P1 - P2
-				       0x0e, // Length
-				       0x32,0x50,0x41,0x59,0x2e,0x53,0x59,0x53,0x2e,0x44,0x44,0x46,0x30,0x31, // 2PAY.SYS.DDF01 (PPSE)
-				       0x00};
-byte_t Command::READ_RECORD[] = {0x40,0x01,
-				 0x00,0xb2,0x01,0x14,0x00};
+class Tools {
+
+public:
+  static void printChar(byte_t const* str, size_t size, std::string const& = "");
+  static void printHex(byte_t const* str, size_t size, std::string const& = "");
+
+};
 
 #endif // __CCHACK_HH__

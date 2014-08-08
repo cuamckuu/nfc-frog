@@ -1,7 +1,10 @@
 
-NAME=	cchack
+NAME=	readcc
 
-SRC=	cchack.cc
+SRC=	cchack.cc \
+	application.cc \
+	ccinfo.cc \
+	misc.cc
 
 LIBS=	-lnfc
 
