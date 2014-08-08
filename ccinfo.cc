@@ -5,10 +5,15 @@
 #include "cchack.hh"
 #include "ccinfo.hh"
 
-CCInfo::CCInfo(Result const& select_app_response)
+CCInfo::CCInfo(APDU const& select_app_response)
   : _select_app_response(select_app_response) {
   // PDOL map init because of g++ segv on static initialisation
   //  PDOLValues[0x9F59] = new byte_t[6] {0xC0,0x80,0x00};
+}
+
+int CCInfo::readRecords() {
+
+  return 0;
 }
 
 int CCInfo::getProcessingOptions() const {
@@ -18,7 +23,7 @@ int CCInfo::getProcessingOptions() const {
   byte_t const* buff = _select_app_response.data;
 
   // Structure to store the PDOL itself
-  Result pdol = {0, {0}};
+  APDU pdol = {0, {0}};
 
   // Look for language preference and PDOL
   for (size_t i = 0; i < size; ++i) {
@@ -62,7 +67,7 @@ int CCInfo::getProcessingOptions() const {
     tagList.push_back(p);
   }
 
-  Result gpo;
+  APDU gpo;
   gpo.size = sizeof(Command::GPO_HEADER);
   memcpy(gpo.data, Command::GPO_HEADER, sizeof(Command::GPO_HEADER));
 
@@ -80,7 +85,7 @@ int CCInfo::getProcessingOptions() const {
 
   std::cout << "Send " << pdol_response_len << "-byte GPO ...";
   // EXECUTE COMMAND
-  Result res = ApplicationHelper::executeCommand(gpo.data, gpo.size, "GPO");
+  APDU res = ApplicationHelper::executeCommand(gpo.data, gpo.size, "GPO");
   if (res.size == 0) {
     std::cerr << "Error received when sending blank GPO" << std::endl;
     return 1;

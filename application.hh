@@ -26,7 +26,7 @@ struct Application {
   char name[128];
 };
 
-struct Result {
+struct APDU {
   int size;
   byte_t data[MAX_FRAME_LEN];
 };
@@ -39,8 +39,8 @@ public:
   static bool checkTrailer();
   static AppList getAll();
   static void printList(AppList const& list);
-  static Result selectByPriority(AppList const& list, byte_t priority);
-  static Result executeCommand(byte_t const* command, size_t size, char const* name);
+  static APDU selectByPriority(AppList const& list, byte_t priority);
+  static APDU executeCommand(byte_t const* command, size_t size, char const* name);
 
 private:
   static byte_t abtRx[MAX_FRAME_LEN];

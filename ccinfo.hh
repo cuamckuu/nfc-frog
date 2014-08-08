@@ -14,13 +14,14 @@ public:
      The PDOL is used to perform the GET PROCESSING OPTION command which is the next step
      before performing READ RECORDS
   */
-  CCInfo(Result const&);
+  CCInfo(APDU const&);
 
 public:
   int getProcessingOptions() const;
+  int readRecords();
 
 private:
-  Result _select_app_response;
+  APDU _select_app_response;
   static const std::map<unsigned short, byte_t const*> PDOLValues;
 };
 

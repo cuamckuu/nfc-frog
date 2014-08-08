@@ -114,7 +114,8 @@ static int	start_and_select_app() {
 
   ApplicationHelper::printList(list);
   // Select application with priority 1
-  Result res = ApplicationHelper::selectByPriority(list, 1);
+  APDU res = ApplicationHelper::selectByPriority(list, 1);
+ res = ApplicationHelper::selectByPriority(list, 2);
 
   if (res.size == 0) {
     std::cerr << "Unable to select application with priority 1" << std::endl;

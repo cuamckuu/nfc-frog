@@ -86,7 +86,7 @@ AppList ApplicationHelper::getAll() {
   return list;
 }
 
-Result ApplicationHelper::selectByPriority(AppList const& list, byte_t priority) {
+APDU ApplicationHelper::selectByPriority(AppList const& list, byte_t priority) {
   
   Application app;
 
@@ -133,13 +133,13 @@ Result ApplicationHelper::selectByPriority(AppList const& list, byte_t priority)
   Tools::printChar(abtRx, szRx, "Answer from SELECT_APP");
 #endif
 
-  Result ret;
+  APDU ret;
   ret.size = szRx;
   memcpy(ret.data, abtRx, MAX_FRAME_LEN);
   return ret;
 }
 
-Result ApplicationHelper::executeCommand(byte_t const* command, size_t size, char const* name) {
+APDU ApplicationHelper::executeCommand(byte_t const* command, size_t size, char const* name) {
   szRx = pn53x_transceive(pnd,
 			  command, size,
 			  abtRx, sizeof(abtRx),
@@ -156,7 +156,7 @@ Result ApplicationHelper::executeCommand(byte_t const* command, size_t size, cha
     return {0, {0}};
   }
     
-  Result ret;
+  APDU ret;
   ret.size = szRx;
   memcpy(ret.data, abtRx, szRx);
   return ret;
