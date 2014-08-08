@@ -5,8 +5,15 @@
 #include "cchack.hh"
 #include "ccinfo.hh"
 
-CCInfo::CCInfo() {
+CCInfo::CCInfo()
+  : _pdol({0, {0}}),
+    _track1DiscretionaruData({0, {0}}),
+    _track2EquivalentData({0, {0}}),
+    _logSFI(0),
+    _logCount(0)
+{
   bzero(_languagePreference, sizeof(_languagePreference));
+  bzero(_cardholderName, sizeof(_cardholderName));
 }
 
 int CCInfo::extractAppResponse(APDU const& appResponse) {
