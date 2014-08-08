@@ -113,23 +113,20 @@ static int	start_and_select_app() {
   }
 
   ApplicationHelper::printList(list);
-  // Select application with priority 1
-  APDU res = ApplicationHelper::selectByPriority(list, 1);
- res = ApplicationHelper::selectByPriority(list, 2);
-
-  if (res.size == 0) {
-    std::cerr << "Unable to select application with priority 1" << std::endl;
-    return 1;
-  }
 
   /* Create CCinfo object then extract all information.
-     The answer from SELECT APP provides the Processing Data Object List (PDOL)
-     which is used to send the GET PROCESSING OPTION command and get the Application
-     File Locator (AFL) to perform READ RECORDS
-     
-     All of this is done in the CCInfo class, method extractAll();
-  */
-  CCInfo infos(res);
+   */
+  CCInfo infos;
+  for (Application app : list) {
+    APDU res = ApplicationHelper::selectByPriority(list, app.priority);
+    if (res.size == 0) {
+      std::cerr << "Unable to select application with priority " << app.priority << std::endl;
+      continue;
+    }
+    infos.extractAppResponse(res);    
+  }
+
+  infos.printAll();
   
   /* Prepare PDOL, print optional interesting fields (e.g. the prefered language)
      and send the GPO

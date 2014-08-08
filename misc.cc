@@ -29,6 +29,14 @@ byte_t Command::READ_RECORD[7] = {0x40,0x01,
   CLASS Tools
 */
 
+void Tools::print(char const* str, std::string const& label) {
+  std::cout << label << ": " << str << std::endl;
+}
+
+void Tools::printHex(APDU const& apdu, std::string const& label) {
+  printHex(apdu.data, apdu.size, label);
+}
+
 void Tools::printChar(byte_t const* str, size_t size, std::string const& label) {
   if (label.size() > 0)
     std::cout << label << ": ";

@@ -38,11 +38,17 @@ public:
 
 };
 
+#include "application.hh"
+
+struct APDU;
+
 class Tools {
 
 public:
-  static void printChar(byte_t const* str, size_t size, std::string const& = "");
-  static void printHex(byte_t const* str, size_t size, std::string const& = "");
+static void print(char const* str, std::string const& label = "");
+static void printChar(byte_t const* str, size_t size, std::string const& = "");
+static void printHex(APDU const&, std::string const& = "");
+static void printHex(byte_t const* str, size_t size, std::string const& = "");
 
 };
 

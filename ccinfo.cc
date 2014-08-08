@@ -5,10 +5,80 @@
 #include "cchack.hh"
 #include "ccinfo.hh"
 
-CCInfo::CCInfo(APDU const& select_app_response)
-  : _select_app_response(select_app_response) {
-  // PDOL map init because of g++ segv on static initialisation
-  //  PDOLValues[0x9F59] = new byte_t[6] {0xC0,0x80,0x00};
+CCInfo::CCInfo() {
+  bzero(_languagePreference, sizeof(_languagePreference));
+}
+
+int CCInfo::extractAppResponse(APDU const& appResponse) {
+  
+  byte_t const* buff = appResponse.data;
+  size_t size = appResponse.size;
+
+  for (size_t i = 0; i < size; ++i) {
+    if (i + 1 < size &&
+	buff[i] == 0x5F && buff[i + 1] == 0x2D) { // Language preference
+      i += 2;
+      byte_t len = buff[i++];
+      memcpy(_languagePreference, &buff[i], len);
+      i += len - 1;
+    }
+    else if (i + 1 < size &&
+	     buff[i] == 0x9F && buff[i + 1] == 0x38) { // PDOL
+      i += 2;
+      // We just store it to parse it later
+      _pdol.size = buff[i++];;
+      memcpy(_pdol.data, &buff[i], _pdol.size);
+      i += _pdol.size - 1;
+    }
+    else if (i + 1 < size &&
+	     buff[i] == 0xBF && buff[i + 1] == 0x0C) { // File Control Information
+      i += 2;
+      byte_t len = buff[i++];;
+      // Parse it now. Extract the LOG ENTRY
+      for (size_t j = 0; j < len; ++j) {
+	if (j + 1 < len &&
+	    buff[i + j] == 0x9F && buff[i + j + 1] == 0x4D) { // Log Entry
+	  j += 3; // Size = 2 so we don't save it
+	  _logSFI = buff[i + j++];
+	  _logCount = buff[i + j];
+	}
+      } // End read LOG ENTRY
+      i += len - 1;
+    }
+    else if (buff[i] == 0x57) { // Track 2 equivalent data
+      i++;
+      _track2EquivalentData.size = buff[i++];
+      memcpy(_track2EquivalentData.data, &buff[i], _track2EquivalentData.size);
+      i += _track2EquivalentData.size - 1;      
+    }
+    else if (i + 1 < size &&
+	     buff[i] == 0x5F && buff[i + 1] == 0x20) { // Cardholder name
+      i += 2;
+      byte_t len = buff[i++];
+      memcpy(_cardholderName, &buff[i], len);
+      i += len - 1;
+    }
+    else if (i + 1 < size &&
+	     buff[i] == 0x9F && buff[i + 1] == 0x1F) { // Track 1 discretionary data
+      i += 2;
+      // We just store it to parse it later
+      _pdol.size = buff[i++];;
+      memcpy(_pdol.data, &buff[i], _pdol.size);
+      i += _pdol.size - 1;
+    }    
+  }
+}
+
+void CCInfo::printAll() const {
+  std::cout << "-- Print All Information --" << std::endl;
+  Tools::print(_languagePreference, "Language Preference");
+  Tools::print(_cardholderName, "Cardholder Name");
+  Tools::printHex(_pdol, "PDOL");
+  Tools::printHex(_track1DiscretionaruData, "Track 1");
+  Tools::printHex(_track2EquivalentData, "Track 2");
+  byte_t tmp = _logSFI << 3 | (1 << 2);
+  Tools::printHex(&tmp, 1, "Query byte for LOG");
+  Tools::printHex(&_logCount, 1, "Log count");
 }
 
 int CCInfo::readRecords() {
@@ -18,37 +88,12 @@ int CCInfo::readRecords() {
 
 int CCInfo::getProcessingOptions() const {
 
-  // Easier access to the buffer
-  size_t size = _select_app_response.size;
-  byte_t const* buff = _select_app_response.data;
-
-  // Structure to store the PDOL itself
-  APDU pdol = {0, {0}};
-
-  // Look for language preference and PDOL
-  for (size_t i = 0; i < size; ++i) {
-    if (i + 1 < size &&
-	buff[i] == 0x5F && buff[i + 1] == 0x2D) { // Language preference
-      i += 2;
-      byte_t len = buff[i++];
-      Tools::printChar(&buff[i], len, "Language Preference");
-      i += len - 1;
-    }
-    if (i + 1 < size &&
-	buff[i] == 0x9F && buff[i + 1] == 0x38) { // PDOL
-      i += 2;
-      byte_t len = buff[i++];
-      // We just store it to parse it later
-      pdol.size = len;
-      memcpy(pdol.data, &buff[i], len);
-      i += len - 1;
-    }
-  }
-
   size_t pdol_response_len = 0;
-  size = pdol.size;
-  buff = pdol.data;
+  size_t size = _pdol.size;
+  byte_t const* buff = _pdol.data;
+
   std::list<std::pair<unsigned short, byte_t> > tagList;
+
   // Browser the PDOL field
   // Retrieve tags required
   for (size_t i = 0; i < size; ++i) {
