@@ -133,8 +133,8 @@ static int	start_and_select_app() {
   /* Prepare PDOL, print optional interesting fields (e.g. the prefered language)
      and send the GPO
   */
-  if (infos.getProcessingOptions())
-    return 0;
+  // if (infos.getProcessingOptions())
+  //   return 0;
 
   return 0;
 }
