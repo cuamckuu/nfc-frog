@@ -36,12 +36,14 @@ private:
   byte_t _logCount;
 
   APDU _logFormat; // Format of log entries
-  APDU _logEntries[20]; // Maximum 20 entries
+  APDU _logEntries[0x20]; // Maximum 32 entries
 
 private:
   APDU _select_app_response;
   static const std::map<unsigned short, byte_t const*> PDOLValues;
   static const std::map<unsigned short, std::string> _logFormatTags;
+  static const std::map<unsigned short, std::string> _currencyCodes;
+  static const std::map<unsigned short, std::string> _countryCodes;
 };
 
 #endif // __CCINFO_HH__

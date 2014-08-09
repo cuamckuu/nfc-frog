@@ -124,12 +124,15 @@ static int	start_and_select_app() {
       std::cerr << "Unable to select application with priority " << app.priority << std::endl;
       continue;
     }
-    infos[i++].extractAppResponse(app, res);
+    infos[i].extractAppResponse(app, res);
     infos[i].extractLogEntries();
+    break;
+    i++;
   }
 
-  for (CCInfo inf : infos) {
-    inf.printAll();
+  for (size_t i = 0; i < list.size(); ++i) {
+    infos[i].printAll();
+    break;
   }
   
   /* Prepare PDOL, print optional interesting fields (e.g. the prefered language)

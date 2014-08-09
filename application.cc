@@ -44,7 +44,7 @@ AppList ApplicationHelper::getAll() {
   std::cout << "OK" << std::endl;
 #ifdef DEBUG
   Tools::printHex(abtRx, szRx, "Answer from SELECT_PPSE");
-  Tools::printChar(abtRx, szRx, "Answer from SELECT_PPSE");
+  //  Tools::printChar(abtRx, szRx, "Answer from SELECT_PPSE");
 #endif
 
   for (size_t i = 0; i < szRx; ++i) {
@@ -130,12 +130,12 @@ APDU ApplicationHelper::selectByPriority(AppList const& list, byte_t priority) {
   std::cout << "OK" << std::endl;
 #ifdef DEBUG
   Tools::printHex(abtRx, szRx, "Answer from SELECT_APP");
-  Tools::printChar(abtRx, szRx, "Answer from SELECT_APP");
+  //  Tools::printChar(abtRx, szRx, "Answer from SELECT_APP");
 #endif
 
   APDU ret;
-  ret.size = szRx;
-  memcpy(ret.data, abtRx, MAX_FRAME_LEN);
+  ret.size = szRx - 1;
+  memcpy(ret.data, abtRx+1, szRx - 1);
   return ret;
 }
 
@@ -146,8 +146,8 @@ APDU ApplicationHelper::executeCommand(byte_t const* command, size_t size, char 
 			  0);
 #ifdef DEBUG
   if (szRx > 0) {
-    Tools::printHex(abtRx, szRx, std::string(std::string("Answer from ") + name));
-    Tools::printChar(abtRx, szRx, std::string(std::string("Answer from ") + name));
+    Tools::printHex(abtRx + 1, szRx - 1, std::string(std::string("Answer from ") + name));
+    //    Tools::printChar(abtRx, szRx, std::string(std::string("Answer from ") + name));
   }
 #endif
 
@@ -157,8 +157,8 @@ APDU ApplicationHelper::executeCommand(byte_t const* command, size_t size, char 
   }
     
   APDU ret;
-  ret.size = szRx;
-  memcpy(ret.data, abtRx, szRx);
+  ret.size = szRx - 1;
+  memcpy(ret.data, abtRx + 1, szRx - 1);
   return ret;
 }
 
