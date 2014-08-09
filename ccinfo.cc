@@ -10,14 +10,18 @@ CCInfo::CCInfo()
     _track1DiscretionaruData({0, {0}}),
     _track2EquivalentData({0, {0}}),
     _logSFI(0),
-    _logCount(0)
+    _logCount(0),
+    _logFormat({0, {0}}),
+    _logEntries({{0, {0}}})
 {
   bzero(_languagePreference, sizeof(_languagePreference));
   bzero(_cardholderName, sizeof(_cardholderName));
 }
 
-int CCInfo::extractAppResponse(APDU const& appResponse) {
+int CCInfo::extractAppResponse(Application const& app, APDU const& appResponse) {
   
+  _application = app;
+
   byte_t const* buff = appResponse.data;
   size_t size = appResponse.size;
 
@@ -76,8 +80,50 @@ int CCInfo::extractAppResponse(APDU const& appResponse) {
   }
 }
 
+int CCInfo::extractLogEntries() {
+
+  // First we get the log format
+  _logFormat = ApplicationHelper::executeCommand(Command::GET_DATA_LOG_FORMAT,
+						 sizeof(Command::GET_DATA_LOG_FORMAT), 
+						 "GET DATA LOG FORMAT");
+  if (_logFormat.size == 0) {
+    std::cerr << "Unable to get the log format. Reading aborted." << std::endl;
+    return 1;
+  }
+  
+  byte_t readRecord[sizeof(Command::READ_RECORD)];
+  memcpy(readRecord, Command::READ_RECORD, sizeof(readRecord));
+
+  // Param 2: First 5 bits = SFI.
+  //          Three other bits must be set to 1|0|0 (P1 is a record number)
+  readRecord[5] = (_logSFI << 3) | (1 << 2);
+
+  for (size_t i = 0; i < _logCount; ++i) {
+
+    // Param 1: record number
+    readRecord[4] = i;
+
+    _logEntries[i] = ApplicationHelper::executeCommand(readRecord,
+						       sizeof(readRecord),
+						       "READ RECORD: LOGFILE");
+    if (_logEntries[i].size == 0)
+      return 1;
+  }  
+
+  return 0;
+}
+
 void CCInfo::printAll() const {
-  std::cout << "-- Print All Information --" << std::endl;
+ 
+  std::cout << std::endl << "-----------------" << std::endl;
+  std::cout << std::endl << "-----------------" << std::endl;
+  std::cout << "-- Application --" << std::endl;
+  std::cout << std::endl << "-----------------" << std::endl;
+  std::cout << "Name: " << _application.name << std::endl;
+  std::cout << "Priority: " << (char)('0' + _application.priority) << std::endl;
+  Tools::printHex(_application.aid, sizeof(_application.aid), "AID");
+
+  std::cout << std::endl << "-----------------" << std::endl;
   Tools::print(_languagePreference, "Language Preference");
   Tools::print(_cardholderName, "Cardholder Name");
   Tools::printHex(_pdol, "PDOL");
@@ -86,6 +132,71 @@ void CCInfo::printAll() const {
   byte_t tmp = _logSFI << 3 | (1 << 2);
   Tools::printHex(&tmp, 1, "Query byte for LOG");
   Tools::printHex(&_logCount, 1, "Log count");
+
+  std::cout << std::endl << "-----------------" << std::endl;
+  std::cout << "-- Paylog --" << std::endl;
+  std::cout << std::endl << "-----------------" << std::endl;
+  // Data are not formatted. We must read the logFormat to parse each entry
+  byte_t const* format = _logFormat.data;
+  size_t size = _logFormat.size;
+  for (APDU entry : _logEntries) {
+    
+    // Read the log format to deduce what is in the log entry
+    for (size_t i = 0; i < size; ++i) {
+      if (format[i] == 0x9A) { // Date
+	i++;
+	size_t len = format[i++];
+	std::cout << _logFormatTags.at(0x9A) << ": ";
+	for (size_t j = 0; j < len; ++j) {
+	  std::cout << (j == 0 ? "" : "/") << (j == 2 ? "20" : "") << HEX(buff[i++]);
+	}
+	std::cout << "; ";
+      }
+      else if (i + 1 < size) {
+	if (format[i] == 0x9F && format[i + 1] == 0x21) { // Time
+	  i += 2;
+	  size_t len = format[i++];
+	  std::cout << _logFormatTags.at(0x9F21) << ": ";
+	  for (size_t j = 0; j < len; ++j)
+	    std::cout << (j == 0 ? "" : ":") << HEX(buff[i++]);	  
+	  std::cout << "; ";
+	}
+	else if (format[i] == 0x5F && format[i + 1] == 0x2A) { // Currency
+	  i += 2;
+	  size_t len = format[i++];
+	  std::cout << _logFormatTags.at(0x5F2A) << ": ";
+	  for (size_t j = 0; j < len; ++j)
+	    std::cout << buff[i++];	  
+	  std::cout << "; ";
+	}
+	else if (format[i] == 0x9F && format[i + 1] == 0x02) { // Amount
+	  i += 2;
+	  size_t len = format[i++];
+	  std::cout << _logFormatTags.at(0x9F02) << ": ";
+	  for (size_t j = 0; j < len; ++j)
+	    std::cout << HEX(buff[i++]); 
+	  std::cout << "; ";
+	}
+	else if (format[i] == 0x9F && format[i + 1] == 0x4E) { // Merchant
+	  i += 2;
+	  size_t len = format[i++];
+	  std::cout << _logFormatTags.at(0x9F4E) << ": ";	  
+	  for (size_t j = 0; j < len; ++j)
+	    std::cout << (char) buff[i++]; 
+	  std::cout << "; ";
+	}
+	else if (format[i] == 0x9F && format[i + 1] == 0x36) { // Counter
+	  i += 2;
+	  size_t len = format[i++];
+	  std::cout << _logFormatTags.at(0x9F36) << ": ";	  
+	  for (size_t j = 0; j < len; ++j)
+	    std::cout << HEX(buff[i++]);
+	  std::cout << "; ";
+	}
+      }
+    }
+
+  }  
 }
 
 int CCInfo::readRecords() {
@@ -148,15 +259,26 @@ int CCInfo::getProcessingOptions() const {
 }
 
 
-const std::map<unsigned short, byte_t const*>CCInfo::PDOLValues = {{0x9F59, new byte_t[3] {0xC8,0x80,0x00}},
-								   {0x9F5A, new byte_t[1] {0x00}},
-								   {0x9F58, new byte_t[1] {0x01}},
-								   {0x9F66, new byte_t[4] {0xB6,0x20,0xC0,0x00}},
-								   {0x9F02, new byte_t[6] {0x00,0x00,0x10,0x00,0x00,0x00}},
-								   {0x9F03, new byte_t[6] {0x00,0x00,0x10,0x00,0x00,0x00}},
-								   {0x9F1A, new byte_t[2] {0x01,0x24}},
-								   {0x5F2A, new byte_t[2] {0x01,0x24}},
-								   {0x95, new byte_t[5] {0x00,0x00,0x00,0x00,0x00}},
-								   {0x9A, new byte_t[3] {0x15,0x01,0x01}},
-								   {0x9C, new byte_t[1] {0x00}},
-								   {0x9F37, new byte_t[4] {0x82,0x3D,0xDE,0x7A}}};
+const std::map<unsigned short, byte_t const*> CCInfo::PDOLValues =
+  {{0x9F59, new byte_t[3] {0xC8,0x80,0x00}},
+   {0x9F5A, new byte_t[1] {0x00}},
+   {0x9F58, new byte_t[1] {0x01}},
+   {0x9F66, new byte_t[4] {0xB6,0x20,0xC0,0x00}},
+   {0x9F02, new byte_t[6] {0x00,0x00,0x10,0x00,0x00,0x00}},
+   {0x9F03, new byte_t[6] {0x00,0x00,0x10,0x00,0x00,0x00}},
+   {0x9F1A, new byte_t[2] {0x01,0x24}},
+   {0x5F2A, new byte_t[2] {0x01,0x24}},
+   {0x95, new byte_t[5] {0x00,0x00,0x00,0x00,0x00}},
+   {0x9A, new byte_t[3] {0x15,0x01,0x01}},
+   {0x9C, new byte_t[1] {0x00}},
+   {0x9F37, new byte_t[4] {0x82,0x3D,0xDE,0x7A}}};
+
+const std::map<unsigned short, std::string> CCInfo::_logFormatTags =
+  {
+    {0x9A, "Date"},
+    {0x9F21, "Time"},
+    {0x5F2A, "Currency (code)"},
+    {0x9F02, "Amount"},
+    {0x9F4E, "Merchant"},
+    {0x9F36,  "Counter"}
+  };

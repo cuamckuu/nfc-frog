@@ -17,10 +17,14 @@ $ gcc cchack.c -lnfc -o readnfccc
 
 #include <string>
 #include <cstdio>
+#include <iostream>
+#include <iomanip>
 
 #define DEBUG
 
 #define MAX_FRAME_LEN 300
+
+#define HEX(c) std::hex << std::uppercase << std::setw(2) << std::setfill('0') << c << std::dec
 
 typedef unsigned char byte_t;
 
@@ -34,7 +38,8 @@ public:
   static const byte_t SELECT_PPSE[22];
   static const byte_t SELECT_APP_HEADER[6];
   static const byte_t GPO_HEADER[6];
-  static byte_t READ_RECORD[7];
+  static const byte_t READ_RECORD[7];
+  static const byte_t GET_DATA_LOG_FORMAT[7];
 
 };
 

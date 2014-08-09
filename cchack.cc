@@ -116,17 +116,21 @@ static int	start_and_select_app() {
 
   /* Create CCinfo object then extract all information.
    */
-  CCInfo infos;
+  CCInfo infos[list.size()];
+  size_t i = 0;
   for (Application app : list) {
     APDU res = ApplicationHelper::selectByPriority(list, app.priority);
     if (res.size == 0) {
       std::cerr << "Unable to select application with priority " << app.priority << std::endl;
       continue;
     }
-    infos.extractAppResponse(res);    
+    infos[i++].extractAppResponse(app, res);
+    infos[i].extractLogEntries();
   }
 
-  infos.printAll();
+  for (CCInfo inf : infos) {
+    inf.printAll();
+  }
   
   /* Prepare PDOL, print optional interesting fields (e.g. the prefered language)
      and send the GPO

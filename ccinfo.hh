@@ -12,7 +12,8 @@ public:
   CCInfo();
 
 public:
-  int extractAppResponse(APDU const&);
+  int extractAppResponse(Application const&, APDU const&);
+  int extractLogEntries();
 
   void printAll() const;
 
@@ -20,22 +21,27 @@ public:
   int readRecords();
 
 private:
-  void _extractLogEntry(byte_t const*, size_t);
+  Application _application;
+  char _languagePreference[56]; // Handle quite a lot of languages if needed...
+  char _cardholderName[56]; // Max size should never exceed 26
 
   // Information to print or to temporary save
   // Not real APDUS!! The structure is used to save the length
-private:
-  char _languagePreference[56]; // Handle quite a lot of languages if needed...
-  char _cardholderName[56]; // Max size should never exceed 26
   APDU _pdol; // Size unknown
   APDU _track1DiscretionaruData; // Size unknown
   APDU _track2EquivalentData; // Max size should never exceed 19
+
+  // SFI and number of log entries
   byte_t _logSFI;
   byte_t _logCount;
+
+  APDU _logFormat; // Format of log entries
+  APDU _logEntries[20]; // Maximum 20 entries
 
 private:
   APDU _select_app_response;
   static const std::map<unsigned short, byte_t const*> PDOLValues;
+  static const std::map<unsigned short, std::string> _logFormatTags;
 };
 
 #endif // __CCINFO_HH__
