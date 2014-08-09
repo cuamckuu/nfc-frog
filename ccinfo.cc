@@ -141,6 +141,7 @@ void CCInfo::printAll() const {
   size_t size = _logFormat.size;
   for (APDU entry : _logEntries) {
     
+    size_t e = 1;
     // Read the log format to deduce what is in the log entry
     for (size_t i = 0; i < size; ++i) {
       if (format[i] == 0x9A) { // Date
@@ -148,7 +149,7 @@ void CCInfo::printAll() const {
 	size_t len = format[i++];
 	std::cout << _logFormatTags.at(0x9A) << ": ";
 	for (size_t j = 0; j < len; ++j) {
-	  std::cout << (j == 0 ? "" : "/") << (j == 2 ? "20" : "") << HEX(buff[i++]);
+	  std::cout << (j == 0 ? "" : "/") << (j == 2 ? "20" : "") << HEX(entry.data[e++]);
 	}
 	std::cout << "; ";
       }
@@ -158,7 +159,7 @@ void CCInfo::printAll() const {
 	  size_t len = format[i++];
 	  std::cout << _logFormatTags.at(0x9F21) << ": ";
 	  for (size_t j = 0; j < len; ++j)
-	    std::cout << (j == 0 ? "" : ":") << HEX(buff[i++]);	  
+	    std::cout << (j == 0 ? "" : ":") << HEX(entry.data[e++]);	  
 	  std::cout << "; ";
 	}
 	else if (format[i] == 0x5F && format[i + 1] == 0x2A) { // Currency
@@ -166,7 +167,7 @@ void CCInfo::printAll() const {
 	  size_t len = format[i++];
 	  std::cout << _logFormatTags.at(0x5F2A) << ": ";
 	  for (size_t j = 0; j < len; ++j)
-	    std::cout << buff[i++];	  
+	    std::cout << entry.data[e++];	  
 	  std::cout << "; ";
 	}
 	else if (format[i] == 0x9F && format[i + 1] == 0x02) { // Amount
@@ -174,7 +175,7 @@ void CCInfo::printAll() const {
 	  size_t len = format[i++];
 	  std::cout << _logFormatTags.at(0x9F02) << ": ";
 	  for (size_t j = 0; j < len; ++j)
-	    std::cout << HEX(buff[i++]); 
+	    std::cout << HEX(entry.data[e++]); 
 	  std::cout << "; ";
 	}
 	else if (format[i] == 0x9F && format[i + 1] == 0x4E) { // Merchant
@@ -182,7 +183,7 @@ void CCInfo::printAll() const {
 	  size_t len = format[i++];
 	  std::cout << _logFormatTags.at(0x9F4E) << ": ";	  
 	  for (size_t j = 0; j < len; ++j)
-	    std::cout << (char) buff[i++]; 
+	    std::cout << (char) entry.data[e++]; 
 	  std::cout << "; ";
 	}
 	else if (format[i] == 0x9F && format[i + 1] == 0x36) { // Counter
@@ -190,7 +191,7 @@ void CCInfo::printAll() const {
 	  size_t len = format[i++];
 	  std::cout << _logFormatTags.at(0x9F36) << ": ";	  
 	  for (size_t j = 0; j < len; ++j)
-	    std::cout << HEX(buff[i++]);
+	    std::cout << HEX(entry.data[e++]);
 	  std::cout << "; ";
 	}
       }
