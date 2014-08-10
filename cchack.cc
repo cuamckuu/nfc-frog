@@ -125,22 +125,23 @@ static int	start_and_select_app() {
       continue;
     }
     infos[i].extractAppResponse(app, res);
+
+    /* Prepare PDOL, print optional interesting fields (e.g. the prefered language)
+       and send the GPO
+    */
+    // if (infos[i].getProcessingOptions())
+    //   ;
+
+    infos[i].extractBaseRecords();
     infos[i].extractLogEntries();
-    break;
+
     i++;
   }
 
   for (size_t i = 0; i < list.size(); ++i) {
     infos[i].printAll();
-    break;
   }
   
-  /* Prepare PDOL, print optional interesting fields (e.g. the prefered language)
-     and send the GPO
-  */
-  // if (infos.getProcessingOptions())
-  //   return 0;
-
   return 0;
 }
 

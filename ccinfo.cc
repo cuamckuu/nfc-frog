@@ -7,7 +7,7 @@
 
 CCInfo::CCInfo()
   : _pdol({0, {0}}),
-    _track1DiscretionaruData({0, {0}}),
+    _track1DiscretionaryData({0, {0}}),
     _track2EquivalentData({0, {0}}),
     _logSFI(0),
     _logCount(0),
@@ -56,27 +56,6 @@ int CCInfo::extractAppResponse(Application const& app, APDU const& appResponse) 
       } // End read LOG ENTRY
       i += len - 1;
     }
-    else if (buff[i] == 0x57) { // Track 2 equivalent data
-      i++;
-      _track2EquivalentData.size = buff[i++];
-      memcpy(_track2EquivalentData.data, &buff[i], _track2EquivalentData.size);
-      i += _track2EquivalentData.size - 1;      
-    }
-    else if (i + 1 < size &&
-	     buff[i] == 0x5F && buff[i + 1] == 0x20) { // Cardholder name
-      i += 2;
-      byte_t len = buff[i++];
-      memcpy(_cardholderName, &buff[i], len);
-      i += len - 1;
-    }
-    else if (i + 1 < size &&
-	     buff[i] == 0x9F && buff[i + 1] == 0x1F) { // Track 1 discretionary data
-      i += 2;
-      // We just store it to parse it later
-      _pdol.size = buff[i++];;
-      memcpy(_pdol.data, &buff[i], _pdol.size);
-      i += _pdol.size - 1;
-    }    
   }
 }
 
@@ -113,6 +92,62 @@ int CCInfo::extractLogEntries() {
   return 0;
 }
 
+int CCInfo::extractBaseRecords() {
+
+  APDU readRecord;
+  APDU res;
+  
+  readRecord.size = sizeof(Command::READ_RECORD);
+  memcpy(readRecord.data, Command::READ_RECORD, sizeof(Command::READ_RECORD));
+  
+  for (size_t sfi = _FROM_SFI; sfi <= _TO_SFI; ++sfi) {
+    // Param 2: First 5 bits = SFI.
+    //          Three other bits must be set to 1|0|0 (P1 is a record number)
+    readRecord.data[5] = (sfi << 3) | (1 << 2);
+
+    for (size_t record = _FROM_RECORD; record <= _TO_RECORD; ++record) {
+      // Param 1: record number
+      readRecord.data[4] = record; 
+
+      res = ApplicationHelper::executeCommand(readRecord.data,
+					      readRecord.size,
+					      "READ RECORD BASE");
+      
+      if (res.size == 0)
+	continue;
+
+      byte_t const* buff = res.data;
+      size_t size = res.size;
+
+      for (size_t i = 0; i < size; ++i) {
+	if (buff[i] == 0x57 && _track2EquivalentData.size == 0) { // Track 2 equivalent data
+	  i++;
+	  _track2EquivalentData.size = buff[i++];
+	  memcpy(_track2EquivalentData.data, &buff[i], _track2EquivalentData.size);
+	  i += _track2EquivalentData.size - 1;      
+	}
+	else if (i + 1 < size &&
+		 buff[i] == 0x5F && buff[i + 1] == 0x20) { // Cardholder name
+	  i += 2;
+	  byte_t len = buff[i++];
+	  if (len > 2) // We dont save when the name is "/"
+	    memcpy(_cardholderName, &buff[i], len);
+	  i += len - 1;
+	}
+	else if (i + 1 < size && _track1DiscretionaryData.size == 0 &&
+		 buff[i] == 0x9F && buff[i + 1] == 0x1F) { // Track 1 discretionary data
+	  i += 2;
+	  // We just store it to parse it later
+	  _track1DiscretionaryData.size = buff[i++];;
+	  memcpy(_track1DiscretionaryData.data, &buff[i], _track1DiscretionaryData.size);
+	  i += _track1DiscretionaryData.size - 1;
+	}    
+      }
+    }
+  }
+  return 0;
+}
+
 void CCInfo::printAll() const {
  
   std::cout << "----------------------------------" << std::endl;
@@ -126,10 +161,51 @@ void CCInfo::printAll() const {
   std::cout << std::endl << "-----------------" << std::endl;
   Tools::print(_languagePreference, "Language Preference");
   Tools::print(_cardholderName, "Cardholder Name");
-  Tools::printHex(_pdol, "PDOL");
-  Tools::printHex(_track1DiscretionaruData, "Track 1");
-  Tools::printHex(_track2EquivalentData, "Track 2");
+  //  Tools::printHex(_pdol, "PDOL");
+  Tools::printHex(_track1DiscretionaryData, "Track 1 Discretionary data");
+  Tools::printHex(_track2EquivalentData, "Track 2 equivalent data");
+
+  printTracksInfo();
+
   std::cout << "Log count: " << (int)_logCount << std::endl;
+  
+  printPaylog();
+}
+
+void CCInfo::printTracksInfo() const {
+  // Track 2
+  /* Description (from emvlab.org)
+    Contains the data elements of track 2 according to ISO/IEC 7813, excluding start sentinel, end sentinel, and Longitudinal Redundancy Check (LRC), as follows:
+    Primary Account Number (n, var. up to 19)
+    Field Separator (Hex 'D') (b)
+    Expiration Date (YYMM) (n 4)
+    Service Code (n 3)
+    Discretionary Data (defined by individual payment systems) (n, var.)
+    Pad with one Hex 'F' if needed to ensure whole bytes (b)
+  */
+  byte_t const* buff = _track2EquivalentData.data;
+  size_t size = _track2EquivalentData.size;
+  
+  size_t i;
+  std::cout << "PAN: ";
+  for (i = 0; i < 8; ++i) {
+    std::cout << HEX(buff[i]) << (i & 1 ? " " : "");
+  }
+  std::cout << std::endl;
+  // Separator now is only 4-bit long, seriously?.. -_-
+  // Next 2 bytes after the separator are the expiry date
+  // So we must pick this:
+  // DY YM M*
+  //  ^ ^^ ^
+  byte_t year = buff[i++] << 4;
+  year |= buff[i] >> 4;
+  byte_t month = buff[i++] << 4;
+  month |= buff[i] >> 4;
+  
+  std::cout << "Expiry date: " << HEX(month) << "/20" << HEX(year) << std::endl;
+}
+
+void CCInfo::printPaylog() const {
 
   std::cout << "-----------------" << std::endl;
   std::cout << "-- Paylog --" << std::endl;
@@ -195,7 +271,7 @@ void CCInfo::printAll() const {
 	  // 6th byte = dk what it is
 	  bool flagZero = true;
 	  for (size_t j = 0; j < len; ++j) {
-	    if (flagZero && entry.data[e] == 0) { // We dont print zeros before the value
+	    if (j < 4 && flagZero && entry.data[e] == 0) { // We dont print zeros before the value
 	      e++;
 	      continue;
 	    }
@@ -253,11 +329,6 @@ void CCInfo::printAll() const {
   std::cout << std::endl << "-----------------" << std::endl;  
 }
 
-int CCInfo::readRecords() {
-
-  return 0;
-}
-
 int CCInfo::getProcessingOptions() const {
 
   size_t pdol_response_len = 0;
@@ -301,10 +372,11 @@ int CCInfo::getProcessingOptions() const {
   gpo.data[gpo.size++] = 0; // Le
 
   std::cout << "Send " << pdol_response_len << "-byte GPO ...";
+  Tools::printHex(gpo, "GPO SEND");
   // EXECUTE COMMAND
   APDU res = ApplicationHelper::executeCommand(gpo.data, gpo.size, "GPO");
   if (res.size == 0) {
-    std::cerr << "Error received when sending blank GPO" << std::endl;
+    std::cerr << "Fail" << std::endl;
     return 1;
   }    
   std::cout << "OK" << std::endl;
@@ -312,20 +384,22 @@ int CCInfo::getProcessingOptions() const {
   return 0;
 }
 
-
+/* The following PDOL values insert a payment in the paylog, be careful when
+   using it via getProcessingOptions()
+ */
 const std::map<unsigned short, byte_t const*> CCInfo::PDOLValues =
-  {{0x9F59, new byte_t[3] {0xC8,0x80,0x00}},
-   {0x9F5A, new byte_t[1] {0x00}},
-   {0x9F58, new byte_t[1] {0x01}},
-   {0x9F66, new byte_t[4] {0xB6,0x20,0xC0,0x00}},
-   {0x9F02, new byte_t[6] {0x00,0x00,0x10,0x00,0x00,0x00}},
-   {0x9F03, new byte_t[6] {0x00,0x00,0x10,0x00,0x00,0x00}},
-   {0x9F1A, new byte_t[2] {0x01,0x24}},
-   {0x5F2A, new byte_t[2] {0x01,0x24}},
-   {0x95, new byte_t[5] {0x00,0x00,0x00,0x00,0x00}},
-   {0x9A, new byte_t[3] {0x15,0x01,0x01}},
-   {0x9C, new byte_t[1] {0x00}},
-   {0x9F37, new byte_t[4] {0x82,0x3D,0xDE,0x7A}}};
+  {{0x9F59, new byte_t[3] {0xC8,0x80,0x00}}, // Terminal Transaction Information
+   {0x9F5A, new byte_t[1] {0x00}}, // Terminal transaction Type. 0 = payment, 1 = withdraw
+   {0x9F58, new byte_t[1] {0x01}}, // Merchant Type Indicator
+   {0x9F66, new byte_t[4] {0xB6,0x20,0xC0,0x00}}, // Terminal Transaction Qualifiers
+   {0x9F02, new byte_t[6] {0x00,0x00,0x10,0x00,0x00,0x00}}, // amount, authorised
+   {0x9F03, new byte_t[6] {0x00,0x00,0x00,0x00,0x00,0x00}}, // Amount, Other 
+   {0x9F1A, new byte_t[2] {0x01,0x24}}, // Terminal country code
+   {0x5F2A, new byte_t[2] {0x01,0x24}}, // Transaction currency code
+   {0x95, new byte_t[5] {0x00,0x00,0x00,0x00,0x00}}, // Terminal Verification Results
+   {0x9A, new byte_t[3] {0x15,0x01,0x01}}, // Transaction Date
+   {0x9C, new byte_t[1] {0x00}}, // Transaction Type
+   {0x9F37, new byte_t[4] {0x82,0x3D,0xDE,0x7A}}}; // Unpredictable number
 
 const std::map<unsigned short, std::string> CCInfo::_logFormatTags =
   {

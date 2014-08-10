@@ -14,11 +14,13 @@ public:
 public:
   int extractAppResponse(Application const&, APDU const&);
   int extractLogEntries();
+  int extractBaseRecords();
 
   void printAll() const;
+  void printPaylog() const;
+  void printTracksInfo() const;
 
   int getProcessingOptions() const;
-  int readRecords();
 
 private:
   Application _application;
@@ -28,7 +30,7 @@ private:
   // Information to print or to temporary save
   // Not real APDUS!! The structure is used to save the length
   APDU _pdol; // Size unknown
-  APDU _track1DiscretionaruData; // Size unknown
+  APDU _track1DiscretionaryData; // Size unknown
   APDU _track2EquivalentData; // Max size should never exceed 19
 
   // SFI and number of log entries
@@ -44,6 +46,11 @@ private:
   static const std::map<unsigned short, std::string> _logFormatTags;
   static const std::map<unsigned short, std::string> _currencyCodes;
   static const std::map<unsigned short, std::string> _countryCodes;
+
+  static const byte_t _FROM_SFI = 1;
+  static const byte_t _TO_SFI = 2;
+  static const byte_t _FROM_RECORD = 1;
+  static const byte_t _TO_RECORD = 2;
 };
 
 #endif // __CCINFO_HH__

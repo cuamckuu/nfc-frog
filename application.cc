@@ -152,7 +152,8 @@ APDU ApplicationHelper::executeCommand(byte_t const* command, size_t size, char 
 #endif
 
   if (szRx < 0 || checkTrailer()) {
-    nfc_perror(pnd, name);
+    if (szRx < 0)
+      nfc_perror(pnd, name);
     return {0, {0}};
   }
     
