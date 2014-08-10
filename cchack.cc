@@ -1,11 +1,17 @@
 /*
-  File edited by Maxime Marches and Thomas Brunner for the requirements of
-  our MSc Project at the University of Kent, Canterbury, UK
+  File edited by Alexis Guillard, Maxime Marches and Thomas Brunner for the requirements
+  of our MSc Project at the University of Kent, Canterbury, UK
+  
+  Retrieves information available from EMV smartcards via an RFID/NFC reader.
+  Both tracks are printed then track2 is parsed to retrieve PAN and expiry date.
+  The paylog is parsed and showed as well.
+  
+  All these information are stored in plaintext on the card and available to anyone.
 
   License: distributed under GPL version 3 (http://www.gnu.org/licenses/gpl.html)
 
   Requirements:
-  libnfc (>= 1.7.1)
+  libnfc (>= 1.7.1) -> For later versions, please update the pn52x_transceive() prototype as it is not included in nfc.h
 
 */
 
@@ -19,10 +25,10 @@ extern "C" {
 
 #include <nfc/nfc.h>
 
-#ifndef PN32X_TRANSCEIVE
-# define PN32X_TRANSCEIVE
+#ifndef PN52X_TRANSCEIVE
+# define PN52X_TRANSCEIVE
   int    pn53x_transceive(struct nfc_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, const size_t szRxLen, int timeout);
-#endif // PN32X_TRANSCEIVE
+#endif // PN52X_TRANSCEIVE
 
 }
 
