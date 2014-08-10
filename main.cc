@@ -59,19 +59,11 @@ static void	init() {
 }
 
 static int startTransmission() {
-  byte_t abtRx[MAX_FRAME_LEN];
-  int szRx;
+  APDU res = ApplicationHelper::executeCommand(Command::START_14443A,
+					       sizeof(Command::START_14443A),
+					       "START 14443A");
 
-  if ((szRx = pn53x_transceive(pnd,
-			       Command::START_14443A, sizeof(Command::START_14443A),
-			       abtRx, sizeof(abtRx),
-			       0)) < 0) {
-    nfc_perror(pnd, "START_14443A");
-    return 1;
-  }
-#ifdef DEBUG
-  Tools::printHex(abtRx, szRx, "Answer from START_14443A");
-#endif
+  return res.size == 0;
 }
 
 static int selectAndReadApplications() {
