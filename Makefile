@@ -1,10 +1,10 @@
 
 NAME=	readcc
 
-SRC=	cchack.cc \
+SRC=	main.cc \
 	application.cc \
 	ccinfo.cc \
-	misc.cc
+	tools.cc
 
 LIBS=	-lnfc
 

@@ -20,43 +20,49 @@
 
 */
 
-#ifndef __APPLICATION_HH__
-# define __APPLICATION_HH__
+#ifndef __CCTOOLS_HH__
+# define __CCTOOLS_HH__
 
-#include <list>
+#include <string>
 #include <cstdio>
+#include <iostream>
+#include <iomanip>
 
-#include "tools.hh"
+#define DEBUG
 
-// For debug now
-extern void show(const size_t, const byte_t*);
+#define MAX_FRAME_LEN 300
 
-struct Application {
-  byte_t priority;
-  byte_t aid[7];
-  char name[128];
-};
+#define HEX(c) std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int)c << std::dec
 
-struct APDU {
-  int size;
-  byte_t data[MAX_FRAME_LEN];
-};
+typedef unsigned char byte_t;
 
-typedef std::list<Application> AppList;
+extern struct nfc_device* pnd;
 
-class ApplicationHelper {
+class Command {
 
 public:
-  static bool checkTrailer();
-  static AppList getAll();
-  static void printList(AppList const& list);
-  static APDU selectByPriority(AppList const& list, byte_t priority);
-  static APDU executeCommand(byte_t const* command, size_t size, char const* name);
+  // Command list
+  static const byte_t START_14443A[3];
+  static const byte_t SELECT_PPSE[22];
+  static const byte_t SELECT_APP_HEADER[6];
+  static const byte_t GPO_HEADER[6];
+  static const byte_t READ_RECORD[7];
+  static const byte_t GET_DATA_LOG_FORMAT[7];
 
-private:
-  static byte_t abtRx[MAX_FRAME_LEN];
-  static int szRx;
 };
 
+#include "application.hh"
 
-#endif // __APPLICATION_HH__
+struct APDU;
+
+class Tools {
+
+public:
+static void print(char const* str, std::string const& label = "");
+static void printChar(byte_t const* str, size_t size, std::string const& = "");
+static void printHex(APDU const&, std::string const& = "");
+static void printHex(byte_t const* str, size_t size, std::string const& = "");
+
+};
+
+#endif // __CCTOOLS_HH__
