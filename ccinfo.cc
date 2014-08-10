@@ -179,7 +179,7 @@ void CCInfo::printAll() const {
   std::cout << "Priority: " << (char)('0' + _application.priority) << std::endl;
   Tools::printHex(_application.aid, sizeof(_application.aid), "AID");
 
-  std::cout << std::endl << "-----------------" << std::endl;
+  std::cout << "-----------------" << std::endl;
   Tools::print(_languagePreference, "Language Preference");
   Tools::print(_cardholderName, "Cardholder Name");
   //  Tools::printHex(_pdol, "PDOL");
@@ -347,7 +347,6 @@ void CCInfo::printPaylog() const {
     }
     std::cout << std::endl;
   }
-  std::cout << std::endl << "-----------------" << std::endl;  
 }
 
 int CCInfo::getProcessingOptions() const {

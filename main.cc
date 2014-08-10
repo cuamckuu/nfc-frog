@@ -58,12 +58,10 @@ static void	init() {
   }
 }
 
-static int startTransmission() {
-  APDU res = ApplicationHelper::executeCommand(Command::START_14443A,
+static void startTransmission() {
+  ApplicationHelper::executeCommand(Command::START_14443A,
 					       sizeof(Command::START_14443A),
 					       "START 14443A");
-
-  return res.size == 0;
 }
 
 static int selectAndReadApplications() {
@@ -75,8 +73,10 @@ static int selectAndReadApplications() {
     return 1;
   }
 
+#ifdef DEBUG
   ApplicationHelper::printList(list);
-
+#endif
+  
   /* Create CCinfo object then extract all information.
    */
   CCInfo infos[list.size()];
@@ -98,6 +98,8 @@ static int selectAndReadApplications() {
     infos[i].extractBaseRecords();
     infos[i].extractLogEntries();
 
+    std::cerr << "App" << (char) ('0' + app.priority) << " finished" << std::endl;
+
     i++;
   }
 
@@ -111,22 +113,19 @@ static int selectAndReadApplications() {
 int	main(__attribute__((unused)) int argc,
 	     __attribute__((unused)) char **argv) {
 
-  byte_t abtRx[MAX_FRAME_LEN];
-  int szRx;
-
-
   init();
 
   while (1) {
 
-    if (startTransmission())
-      continue;
+    startTransmission();
 
-    if (selectAndReadApplications())
-      ;
+    std::cerr << "Got a card...";
+    
+    std::cout << "========================= NEW CARD =====" << std::endl;
+    selectAndReadApplications();
+
+    std::cerr << "finished" << std::endl;
   }
 
   return 0;
 }
-
-

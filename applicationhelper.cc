@@ -53,21 +53,16 @@ bool ApplicationHelper::checkTrailer() {
 AppList ApplicationHelper::getAll() {
   AppList list;
 
-  // SELECT PPSE to retrieve all SFI
-  std::cout << "Select PPSE...";  
-  if ((szRx = pn53x_transceive(pnd,
-			       Command::SELECT_PPSE, sizeof(Command::SELECT_PPSE),
-			       abtRx, sizeof(abtRx),
-			       0)) < 0 || checkTrailer()) {
-    nfc_perror(pnd, "SELECT_PPSE");
+  // SELECT PPSE to retrieve all applications
+  APDU res = executeCommand(Command::SELECT_PPSE,
+			    sizeof(Command::SELECT_PPSE),
+			    "SELECT PPSE");
+  if (res.size == 0)
     return list;
-  }
-  std::cout << "OK" << std::endl;
-#ifdef DEBUG
-  Tools::printHex(abtRx, szRx, "Answer from SELECT_PPSE");
-  //  Tools::printChar(abtRx, szRx, "Answer from SELECT_PPSE");
-#endif
 
+  /* szRx and abtRx are the same as the return value,
+     we can use them directly as long as the software is not multithreated
+  */
   for (size_t i = 0; i < szRx; ++i) {
     if (abtRx[i] == 0x61) { // Application template
       Application app;
@@ -139,25 +134,8 @@ APDU ApplicationHelper::selectByPriority(AppList const& list, byte_t priority) {
   // Implicit 0x00 at the end due to bzero
   size += 1;
   
-  std::cout << "Select app: " << app.name << " ...";
   // EXECUTE SELECT
-  if ((szRx = pn53x_transceive(pnd,
-			       select_app, size,
-			       abtRx, sizeof(abtRx),
-			       0)) < 0 || checkTrailer()) {
-    nfc_perror(pnd, std::string(std::string("SELECT_APP_") + app.name).c_str());
-    return {0, {0}};
-  }
-  std::cout << "OK" << std::endl;
-#ifdef DEBUG
-  Tools::printHex(abtRx, szRx, "Answer from SELECT_APP");
-  //  Tools::printChar(abtRx, szRx, "Answer from SELECT_APP");
-#endif
-
-  APDU ret;
-  ret.size = szRx - 1;
-  memcpy(ret.data, abtRx+1, szRx - 1);
-  return ret;
+  return executeCommand(select_app, size, "SELECT APP");
 }
 
 APDU ApplicationHelper::executeCommand(byte_t const* command, size_t size, char const* name) {
