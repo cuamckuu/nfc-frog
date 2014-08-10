@@ -28,10 +28,11 @@
 #include <iostream>
 #include <iomanip>
 
-#define DEBUG
+//#define DEBUG
 
 #define MAX_FRAME_LEN 300
 
+// Macro to print unsigned chars in hexadecimal
 #define HEX(c) std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int)c << std::dec
 
 typedef unsigned char byte_t;
