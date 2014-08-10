@@ -34,7 +34,7 @@ extern "C" {
 #endif // PN32X_TRANSCEIVE
 }
 
-#include "application.hh"
+#include "applicationhelper.hh"
 #include "tools.hh"
 
 byte_t ApplicationHelper::abtRx[MAX_FRAME_LEN];

@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __CCTOOLS_HH__
-# define __CCTOOLS_HH__
+#ifndef __TOOLS_HH__
+# define __TOOLS_HH__
 
 #include <string>
 #include <cstdio>
@@ -38,10 +38,20 @@ typedef unsigned char byte_t;
 
 extern struct nfc_device* pnd;
 
-class Command {
+struct Application {
+  byte_t priority;
+  byte_t aid[7];
+  char name[128];
+};
 
+struct APDU {
+  int size;
+  byte_t data[MAX_FRAME_LEN];
+};
+
+// Command list
+class Command {
 public:
-  // Command list
   static const byte_t START_14443A[3];
   static const byte_t SELECT_PPSE[22];
   static const byte_t SELECT_APP_HEADER[6];
@@ -51,18 +61,13 @@ public:
 
 };
 
-#include "application.hh"
-
-struct APDU;
-
+// Misc tools for printing
 class Tools {
-
 public:
-static void print(char const* str, std::string const& label = "");
-static void printChar(byte_t const* str, size_t size, std::string const& = "");
-static void printHex(APDU const&, std::string const& = "");
-static void printHex(byte_t const* str, size_t size, std::string const& = "");
-
+  static void print(char const* str, std::string const& label = "");
+  static void printChar(byte_t const* str, size_t size, std::string const& = "");
+  static void printHex(APDU const&, std::string const& = "");
+  static void printHex(byte_t const* str, size_t size, std::string const& = "");
 };
 
-#endif // __CCTOOLS_HH__
+#endif // __TOOLS_HH__

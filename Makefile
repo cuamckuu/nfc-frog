@@ -2,7 +2,7 @@
 NAME=	readcc
 
 SRC=	main.cc \
-	application.cc \
+	applicationhelper.cc \
 	ccinfo.cc \
 	tools.cc
 

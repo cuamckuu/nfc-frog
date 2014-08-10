@@ -34,7 +34,7 @@ extern "C" {
 #include <iostream>
 
 #include "tools.hh"
-#include "application.hh"
+#include "applicationhelper.hh"
 #include "ccinfo.hh"
 
 struct nfc_device* pnd;

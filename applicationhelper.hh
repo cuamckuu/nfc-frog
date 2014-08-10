@@ -20,27 +20,13 @@
 
 */
 
-#ifndef __APPLICATION_HH__
-# define __APPLICATION_HH__
+#ifndef __APPLICATIONHELPER_HH__
+# define __APPLICATIONHELPER_HH__
 
 #include <list>
 #include <cstdio>
 
 #include "tools.hh"
-
-// For debug now
-extern void show(const size_t, const byte_t*);
-
-struct Application {
-  byte_t priority;
-  byte_t aid[7];
-  char name[128];
-};
-
-struct APDU {
-  int size;
-  byte_t data[MAX_FRAME_LEN];
-};
 
 typedef std::list<Application> AppList;
 
@@ -58,5 +44,4 @@ private:
   static int szRx;
 };
 
-
-#endif // __APPLICATION_HH__
+#endif // __APPLICATIONHELPER_HH__
