@@ -1,14 +1,18 @@
 KentMsc
 =======
 
-Msc projet at University of Kent. 
-By Alexis Guillard, Maxime Marches and Thomas Brunner
+This code was written as part of a project for our M.Sc. in the School of Computing of the University of Kent, in Canterbury, UK.
+By Alexis Guillard, Maxime Marches and Thomas Brunner.
+Supervised by Julio Hernandez-Castro, who gave us the idea and the opportunity to realise this project.
+Other thanks go to the whole University for the friendly help provided in all domains and the Adafruit forum for their reactivity.
 
-Inspired from readnfccc by R. Lifchitz then rewritten to read more information and be more generic.
+This work got first inspired from readnfccc by R. Lifchitz then rewritten to read more information and be more generic.
 
+==============
 Reads basic information from NFC-enabled credit cards (owner, PAN, expiry date, last payments).
 
-Tested with french Visa and MasterCard
+Tested with french Visa and MasterCard.
+Antenna: http://www.adafruit.com/products/364 (Adafruit PN532 controller breakout board)
 
 All information retrieved are stored in plaintext (nothing is 'hacked', decrypted or anything else). Yes this is a HUGE PRIVACY ISSUE.
 
@@ -18,6 +22,7 @@ Beware of the GPO command that inserts entries into the paylog, even though it d
 
 To save records, redirect the standard output to a file.
 
+==============
 Use at your own risk.
 
 Feel free to contribute.
