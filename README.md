@@ -10,7 +10,7 @@ Other thanks go to the whole University for the friendly help provided in all do
 
 This work got first inspired from readnfccc by R. Lifchitz then rewritten to read more information and be more generic.
 
-Demmonstration: http://youtu.be/8ptqLROjgsg
+Demonstration: http://youtu.be/8ptqLROjgsg
 
 ==============
 Reads basic information from NFC-enabled credit cards (owner, PAN, expiry date, last payments).
