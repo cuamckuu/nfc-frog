@@ -1,4 +1,4 @@
-KentMsc
+Nfcmillionaire
 =======
 
 This code was written as part of a project for our M.Sc. in the School of Computing of the University of Kent, in Canterbury, UK.
