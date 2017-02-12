@@ -28,6 +28,8 @@
 #include <iostream>
 #include <iomanip>
 
+#include <nfc/nfc-types.h>
+
 //#define DEBUG
 
 #define MAX_FRAME_LEN 300
@@ -37,7 +39,7 @@
 
 typedef unsigned char byte_t;
 
-extern struct nfc_device* pnd;
+extern nfc_device* pnd;
 
 struct Application {
   byte_t priority;

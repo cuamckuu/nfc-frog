@@ -23,6 +23,7 @@
 extern "C" {
 
 #include <nfc/nfc.h>
+#include <nfc/nfc-types.h>
   
 #ifndef PN52X_TRANSCEIVE
 # define PN52X_TRANSCEIVE
@@ -37,11 +38,10 @@ extern "C" {
 #include "applicationhelper.hh"
 #include "ccinfo.hh"
 
-struct nfc_device* pnd;
+nfc_device* pnd = NULL;
+static nfc_context *context;
 
 static void	init() {
-
-  nfc_context *context;
 
   nfc_init(&context);
   if (context == NULL) {
@@ -56,12 +56,50 @@ static void	init() {
     nfc_exit(context);
     exit(EXIT_FAILURE);
   }
+
+  if (nfc_initiator_init(pnd) < 0) {
+    nfc_perror(pnd, "nfc_initiator_init");
+    nfc_close(pnd);
+    nfc_exit(context);
+    exit(EXIT_FAILURE);
+  }
+
+  std::cout << "NFC reader: " << nfc_device_get_name(pnd) << " opened." << std::endl;
+}
+
+static void print_nfc_target(const nfc_target *pnt)
+{
+  char *s;
+  str_nfc_target(&s, pnt, true);
+  std::cout << s;
+  nfc_free(s);
 }
 
 static void startTransmission() {
-  ApplicationHelper::executeCommand(Command::START_14443A,
-					       sizeof(Command::START_14443A),
-					       "START 14443A");
+  const uint8_t uiPollNr = 1;
+  const uint8_t uiPeriod = 2;
+  const nfc_modulation nmModulations[2] = {
+    { NMT_ISO14443A, NBR_106 },
+    { NMT_ISO14443B, NBR_106 },
+  };
+  const size_t szModulations = 2;
+
+  nfc_target nt;
+  int res = 0;
+
+  std::cout << "NFC device will poll during " << (unsigned long) uiPollNr * szModulations * uiPeriod * 150 << " ms" << std::endl;
+  if ((res = nfc_initiator_poll_target(pnd, nmModulations, szModulations, uiPollNr, uiPeriod, &nt)) < 0) {
+    nfc_perror(pnd, "nfc_initiator_poll_target");
+    nfc_close(pnd);
+    nfc_exit(context);
+    exit(EXIT_FAILURE);
+  }
+
+  if (res > 0) {
+    print_nfc_target(&nt);
+  } else {
+    std::cout << "No target found." << std::endl;
+  }
 }
 
 static int selectAndReadApplications() {
@@ -118,13 +156,11 @@ int	main(__attribute__((unused)) int argc,
   while (1) {
 
     startTransmission();
-
-    std::cerr << "Got a card...";
     
-    std::cout << "========================= NEW CARD =====" << std::endl;
+    std::cout << "========================= NEW CARD =========================" << std::endl;
     selectAndReadApplications();
 
-    std::cerr << "finished" << std::endl;
+    std::cout << "========================= DONE =========================" << std::endl;
   }
 
   return 0;
