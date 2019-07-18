@@ -2,15 +2,15 @@
 
 EXECUTABLE= readcc
 
-CC=	g++
-CFLAGS+= -W -Wall -pedantic
-CXXFLAGS+= -std=c++0x
+CXX= g++
+CXXFLAGS+= -std=c++11 -W -Wall -pedantic
 LIBS= -lnfc
 
 SRC= main.cpp \
 	 applicationhelper.cpp \
 	 ccinfo.cpp \
-	 tools.cpp
+	 tools.cpp \
+	 device_nfc.cpp
 
 OBJ=$(SRC:.cpp=.o)
 
@@ -20,7 +20,7 @@ cls:
 	clear
 
 compile: $(OBJ)
-	$(CC) -o $(EXECUTABLE) $(OBJ) $(LIBS)
+	$(CXX) -o $(EXECUTABLE) $(OBJ) $(LIBS)
 
 clean:
 	rm -rf $(OBJ) $(NAME)
