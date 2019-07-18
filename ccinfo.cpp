@@ -1,18 +1,18 @@
 /*
   Copyright (C) 2014 Alexis Guillard, Maxime Marches, Thomas Brunner
-  
+
   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-  
+
   The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-  
+
   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-  
+
   File written for the requirements of our MSc Project at the University of Kent, Canterbury, UK
-  
+
   Retrieves information available from EMV smartcards via an RFID/NFC reader.
   Both tracks are printed then track2 is parsed to retrieve PAN and expiry date.
   The paylog is parsed and showed as well.
-  
+
   All these information are stored in plaintext on the card and available to anyone.
 
   Requirements:
@@ -23,8 +23,8 @@
 #include <iostream>
 #include <cstring>
 
-#include "tools.hh"
-#include "ccinfo.hh"
+#include "headers/tools.h"
+#include "headers/ccinfo.h"
 
 CCInfo::CCInfo()
   : _pdol({0, {0}}),
@@ -40,7 +40,7 @@ CCInfo::CCInfo()
 }
 
 int CCInfo::extractAppResponse(Application const& app, APDU const& appResponse) {
-  
+
   _application = app;
 
   byte_t const* buff = appResponse.data;
@@ -84,13 +84,13 @@ int CCInfo::extractLogEntries() {
 
   // First we get the log format
   _logFormat = ApplicationHelper::executeCommand(Command::GET_DATA_LOG_FORMAT,
-						 sizeof(Command::GET_DATA_LOG_FORMAT), 
+						 sizeof(Command::GET_DATA_LOG_FORMAT),
 						 "GET DATA LOG FORMAT");
   if (_logFormat.size == 0) {
     std::cerr << "Unable to get the log format. Reading aborted." << std::endl;
     return 1;
   }
-  
+
   byte_t readRecord[sizeof(Command::READ_RECORD)];
   memcpy(readRecord, Command::READ_RECORD, sizeof(readRecord));
 
@@ -117,10 +117,10 @@ int CCInfo::extractBaseRecords() {
 
   APDU readRecord;
   APDU res;
-  
+
   readRecord.size = sizeof(Command::READ_RECORD);
   memcpy(readRecord.data, Command::READ_RECORD, sizeof(Command::READ_RECORD));
-  
+
   for (size_t sfi = _FROM_SFI; sfi <= _TO_SFI; ++sfi) {
     // Param 2: First 5 bits = SFI.
     //          Three other bits must be set to 1|0|0 (P1 is a record number)
@@ -128,12 +128,12 @@ int CCInfo::extractBaseRecords() {
 
     for (size_t record = _FROM_RECORD; record <= _TO_RECORD; ++record) {
       // Param 1: record number
-      readRecord.data[4] = record; 
+      readRecord.data[4] = record;
 
       res = ApplicationHelper::executeCommand(readRecord.data,
 					      readRecord.size,
 					      "READ RECORD BASE");
-      
+
       if (res.size == 0)
 	continue;
 
@@ -145,7 +145,7 @@ int CCInfo::extractBaseRecords() {
 	  i++;
 	  _track2EquivalentData.size = buff[i++];
 	  memcpy(_track2EquivalentData.data, &buff[i], _track2EquivalentData.size);
-	  i += _track2EquivalentData.size - 1;      
+	  i += _track2EquivalentData.size - 1;
 	}
 	else if (i + 1 < size &&
 		 buff[i] == 0x5F && buff[i + 1] == 0x20) { // Cardholder name
@@ -162,7 +162,7 @@ int CCInfo::extractBaseRecords() {
 	  _track1DiscretionaryData.size = buff[i++];;
 	  memcpy(_track1DiscretionaryData.data, &buff[i], _track1DiscretionaryData.size);
 	  i += _track1DiscretionaryData.size - 1;
-	}    
+	}
       }
     }
   }
@@ -170,7 +170,7 @@ int CCInfo::extractBaseRecords() {
 }
 
 void CCInfo::printAll() const {
- 
+
   std::cout << "----------------------------------" << std::endl;
   std::cout << "----------------------------------" << std::endl;
   std::cout << "-- Application --" << std::endl;
@@ -189,7 +189,7 @@ void CCInfo::printAll() const {
   printTracksInfo();
 
   std::cout << "Log count: " << (int)_logCount << std::endl;
-  
+
   printPaylog();
 }
 
@@ -206,7 +206,7 @@ void CCInfo::printTracksInfo() const {
   */
   byte_t const* buff = _track2EquivalentData.data;
   size_t size = _track2EquivalentData.size;
-  
+
   size_t i;
   std::cout << "PAN: ";
   for (i = 0; i < 8; ++i) {
@@ -222,7 +222,7 @@ void CCInfo::printTracksInfo() const {
   year |= buff[i] >> 4;
   byte_t month = buff[i++] << 4;
   month |= buff[i] >> 4;
-  
+
   std::cout << "Expiry date: " << HEX(month) << "/20" << HEX(year) << std::endl;
 }
 
@@ -238,7 +238,7 @@ void CCInfo::printPaylog() const {
   for (APDU entry : _logEntries) {
     if (entry.size == 0)
       break;
-    
+
     std::cout << index++ << ": ";
     size_t e = 0;
     // Read the log format to deduce what is in the log entry
@@ -265,7 +265,7 @@ void CCInfo::printPaylog() const {
 	  size_t len = format[i];
 	  std::cout << _logFormatTags.at(0x9F21) << ": ";
 	  for (size_t j = 0; j < len; ++j)
-	    std::cout << (j == 0 ? "" : ":") << HEX(entry.data[e++]);	  
+	    std::cout << (j == 0 ? "" : ":") << HEX(entry.data[e++]);
 	  std::cout << "; ";
 	}
 	else if (format[i] == 0x5F && format[i + 1] == 0x2A) { // Currency
@@ -276,7 +276,7 @@ void CCInfo::printPaylog() const {
 	  // If the code is unknown, we print it. Otherwise we print the 3-char equivalent
 	  if (_currencyCodes.find(value) == _currencyCodes.end()) {
 	    for (size_t j = 0; j < len; ++j)
-	      std::cout << HEX(entry.data[e++]);	  
+	      std::cout << HEX(entry.data[e++]);
 	  } else {
 	    std::cout << _currencyCodes.at(value);
 	    e += 2;
@@ -307,15 +307,15 @@ void CCInfo::printPaylog() const {
 	else if (format[i] == 0x9F && format[i + 1] == 0x4E) { // Merchant
 	  i += 2;
 	  size_t len = format[i];
-	  std::cout << _logFormatTags.at(0x9F4E) << ": ";	  
+	  std::cout << _logFormatTags.at(0x9F4E) << ": ";
 	  for (size_t j = 0; j < len; ++j)
-	    std::cout << (char) entry.data[e++]; 
+	    std::cout << (char) entry.data[e++];
 	  std::cout << "; ";
 	}
 	else if (format[i] == 0x9F && format[i + 1] == 0x36) { // Counter
 	  i += 2;
 	  size_t len = format[i];
-	  std::cout << _logFormatTags.at(0x9F36) << ": ";	  
+	  std::cout << _logFormatTags.at(0x9F36) << ": ";
 	  for (size_t j = 0; j < len; ++j)
 	    std::cout << HEX(entry.data[e++]);
 	  std::cout << "; ";
@@ -328,7 +328,7 @@ void CCInfo::printPaylog() const {
 	  // If the code is unknown, we print it. Otherwise we print the 3-char equivalent
 	  if (_countryCodes.find(value) == _countryCodes.end()) {
 	    for (size_t j = 0; j < len; ++j)
-	      std::cout << HEX(entry.data[e++]);	  
+	      std::cout << HEX(entry.data[e++]);
 	  } else {
 	    std::cout << _countryCodes.at(value);
 	    e += 2;
@@ -388,7 +388,7 @@ int CCInfo::getProcessingOptions() const {
     memcpy(&gpo.data[gpo.size], PDOLValues.at(i.first), i.second);
     gpo.size += i.second;
   }
-  
+
   gpo.data[gpo.size++] = 0; // Le
 
   std::cout << "Send " << pdol_response_len << "-byte GPO ...";
@@ -398,9 +398,9 @@ int CCInfo::getProcessingOptions() const {
   if (res.size == 0) {
     std::cerr << "Fail" << std::endl;
     return 1;
-  }    
+  }
   std::cout << "OK" << std::endl;
-  
+
   return 0;
 }
 
@@ -413,7 +413,7 @@ const std::map<unsigned short, byte_t const*> CCInfo::PDOLValues =
    {0x9F58, new byte_t[1] {0x01}}, // Merchant Type Indicator
    {0x9F66, new byte_t[4] {0xB6,0x20,0xC0,0x00}}, // Terminal Transaction Qualifiers
    {0x9F02, new byte_t[6] {0x00,0x00,0x10,0x00,0x00,0x00}}, // amount, authorised
-   {0x9F03, new byte_t[6] {0x00,0x00,0x00,0x00,0x00,0x00}}, // Amount, Other 
+   {0x9F03, new byte_t[6] {0x00,0x00,0x00,0x00,0x00,0x00}}, // Amount, Other
    {0x9F1A, new byte_t[2] {0x01,0x24}}, // Terminal country code
    {0x5F2A, new byte_t[2] {0x01,0x24}}, // Transaction currency code
    {0x95, new byte_t[5] {0x00,0x00,0x00,0x00,0x00}}, // Terminal Verification Results

@@ -1,18 +1,18 @@
 /*
   Copyright (C) 2014 Alexis Guillard, Maxime Marches, Thomas Brunner
-  
+
   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-  
+
   The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-  
+
   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-  
+
   File written for the requirements of our MSc Project at the University of Kent, Canterbury, UK
-  
+
   Retrieves information available from EMV smartcards via an RFID/NFC reader.
   Both tracks are printed then track2 is parsed to retrieve PAN and expiry date.
   The paylog is parsed and showed as well.
-  
+
   All these information are stored in plaintext on the card and available to anyone.
 
   Requirements:
@@ -24,19 +24,19 @@ extern "C" {
 
 #include <nfc/nfc.h>
 #include <nfc/nfc-types.h>
-  
+
 #ifndef PN52X_TRANSCEIVE
 # define PN52X_TRANSCEIVE
   int    pn53x_transceive(struct nfc_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, const size_t szRxLen, int timeout);
-#endif // PN52X_TRANSCEIVE 
+#endif // PN52X_TRANSCEIVE
 
 }
 
 #include <iostream>
 
-#include "tools.hh"
-#include "applicationhelper.hh"
-#include "ccinfo.hh"
+#include "headers/tools.h"
+#include "headers/applicationhelper.h"
+#include "headers/ccinfo.h"
 
 nfc_device* pnd = NULL;
 static nfc_context *context;
@@ -114,7 +114,7 @@ static int selectAndReadApplications() {
 #ifdef DEBUG
   ApplicationHelper::printList(list);
 #endif
-  
+
   /* Create CCinfo object then extract all information.
    */
   CCInfo infos[list.size()];
@@ -144,7 +144,7 @@ static int selectAndReadApplications() {
   for (size_t i = 0; i < list.size(); ++i) {
     infos[i].printAll();
   }
-  
+
   return 0;
 }
 
@@ -156,7 +156,7 @@ int	main(__attribute__((unused)) int argc,
   while (1) {
 
     startTransmission();
-    
+
     std::cout << "========================= NEW CARD =========================" << std::endl;
     selectAndReadApplications();
 

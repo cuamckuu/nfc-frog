@@ -1,20 +1,19 @@
+NAME= readcc
 
-NAME=	readcc
+SRC= main.cpp \
+	 applicationhelper.cpp \
+	 ccinfo.cpp \
+	 tools.cpp
 
-SRC=	main.cc \
-	applicationhelper.cc \
-	ccinfo.cc \
-	tools.cc
+LIBS= -lnfc
 
-LIBS=	-lnfc
-
-OBJ=$(SRC:.cc=.o)
+OBJ=$(SRC:.cpp=.o)
 
 CC=	g++
 
 CFLAGS+= -W -Wall -pedantic
 
-CXXFLAGS+=	-std=c++0x
+CXXFLAGS+= -std=c++0x
 
 $(NAME): $(OBJ)
 	$(CC) -o $(NAME) $(OBJ) $(LIBS)

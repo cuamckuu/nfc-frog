@@ -1,18 +1,18 @@
 /*
   Copyright (C) 2014 Alexis Guillard, Maxime Marches, Thomas Brunner
-  
+
   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-  
+
   The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-  
+
   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-  
+
   File written for the requirements of our MSc Project at the University of Kent, Canterbury, UK
-  
+
   Retrieves information available from EMV smartcards via an RFID/NFC reader.
   Both tracks are printed then track2 is parsed to retrieve PAN and expiry date.
   The paylog is parsed and showed as well.
-  
+
   All these information are stored in plaintext on the card and available to anyone.
 
   Requirements:
@@ -34,8 +34,8 @@ extern "C" {
 #endif // PN32X_TRANSCEIVE
 }
 
-#include "applicationhelper.hh"
-#include "tools.hh"
+#include "headers/applicationhelper.h"
+#include "headers/tools.h"
 
 byte_t ApplicationHelper::abtRx[MAX_FRAME_LEN];
 int ApplicationHelper::szRx;
@@ -72,7 +72,7 @@ AppList ApplicationHelper::getAll() {
 	if (abtRx[i] == 0x4F) { // Application ID
 	  byte_t len = abtRx[++i];
 	  i++;
-	  
+
 	  if (len != 7)
 	    std::cerr << "Application id larger then 7 bytes, wtf. Continue anyway. Its gonna crash" << std::endl;
 	  memcpy(app.aid, &abtRx[i], len);
@@ -92,7 +92,7 @@ AppList ApplicationHelper::getAll() {
 	  app.name[len] = 0;
 	  i += len - 1;
 	}
-	
+
       }
       list.push_back(app);
       --i;
@@ -103,7 +103,7 @@ AppList ApplicationHelper::getAll() {
 }
 
 APDU ApplicationHelper::selectByPriority(AppList const& list, byte_t priority) {
-  
+
   Application app;
 
   // Pick the application with the given priority
@@ -113,27 +113,27 @@ APDU ApplicationHelper::selectByPriority(AppList const& list, byte_t priority) {
       break;
     }
   }
-  
+
   // Prepare the SELECT command
   byte_t select_app[256];
   byte_t size = 0;
   bzero(select_app, 256);
-  
+
   // Header
   memcpy(select_app, Command::SELECT_APP_HEADER, sizeof(Command::SELECT_APP_HEADER));
   size = sizeof(Command::SELECT_APP_HEADER);
-  
+
   // Len
   select_app[size] = sizeof(app.aid);
   size += 1;
-  
+
   // AID
   memcpy(select_app + size, app.aid, sizeof(app.aid));
   size += sizeof(app.aid);
-  
+
   // Implicit 0x00 at the end due to bzero
   size += 1;
-  
+
   // EXECUTE SELECT
   return executeCommand(select_app, size, "SELECT APP");
 }
@@ -155,7 +155,7 @@ APDU ApplicationHelper::executeCommand(byte_t const* command, size_t size, char 
       nfc_perror(pnd, name);
     return {0, {0}};
   }
-    
+
   APDU ret;
   ret.size = szRx - 1;
   memcpy(ret.data, abtRx + 1, szRx - 1);
