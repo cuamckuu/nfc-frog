@@ -1,26 +1,29 @@
-NAME= readcc
+.PHONY: all cls compile run clean test
+
+EXECUTABLE= readcc
+
+CC=	g++
+CFLAGS+= -W -Wall -pedantic
+CXXFLAGS+= -std=c++0x
+LIBS= -lnfc
 
 SRC= main.cpp \
 	 applicationhelper.cpp \
 	 ccinfo.cpp \
 	 tools.cpp
 
-LIBS= -lnfc
-
 OBJ=$(SRC:.cpp=.o)
 
-CC=	g++
+all: cls compile clean
 
-CFLAGS+= -W -Wall -pedantic
+cls:
+	clear
 
-CXXFLAGS+= -std=c++0x
-
-$(NAME): $(OBJ)
-	$(CC) -o $(NAME) $(OBJ) $(LIBS)
-
-all: $(NAME)
+compile: $(OBJ)
+	$(CC) -o $(EXECUTABLE) $(OBJ) $(LIBS)
 
 clean:
 	rm -rf $(OBJ) $(NAME)
 
-re:	clean all
+run:
+	./$(EXECUTABLE)
