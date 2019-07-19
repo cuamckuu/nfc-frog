@@ -22,9 +22,9 @@ typedef unsigned char byte_t;
 extern nfc_device *pnd;
 
 struct Application {
-    byte_t priority;
-    byte_t aid[7];
-    char name[128];
+    byte_t priority = 0;
+    byte_t aid[7] = {};
+    char name[128] = {};
 };
 
 struct APDU {
