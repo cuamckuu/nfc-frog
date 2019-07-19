@@ -37,11 +37,11 @@ void parse_TLV(T *dest, byte_t *src, int &idx) {
     idx += len - 1;
 }
 
-AppList ApplicationHelper::getAll() {
+AppList ApplicationHelper::getAll(nfc_device *pnd) {
     AppList list;
 
     // SELECT PPSE to retrieve all applications
-    APDU res = executeCommand(Command::SELECT_PPSE,
+    APDU res = executeCommand(pnd, Command::SELECT_PPSE,
                               sizeof(Command::SELECT_PPSE), "SELECT PPSE");
     if (res.size == 0)
         return list;
@@ -73,7 +73,7 @@ AppList ApplicationHelper::getAll() {
     return list;
 }
 
-APDU ApplicationHelper::selectByPriority(AppList const &list, byte_t priority) {
+APDU ApplicationHelper::selectByPriority(nfc_device *pnd, AppList const &list, byte_t priority) {
 
     Application app;
 
@@ -107,10 +107,10 @@ APDU ApplicationHelper::selectByPriority(AppList const &list, byte_t priority) {
     size += 1;
 
     // EXECUTE SELECT
-    return executeCommand(select_app, size, "SELECT APP");
+    return executeCommand(pnd, select_app, size, "SELECT APP");
 }
 
-APDU ApplicationHelper::executeCommand(byte_t const *command, size_t size,
+APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, size_t size,
                                        char const *name) {
     szRx = pn53x_transceive(pnd, command, size, abtRx, sizeof(abtRx), 0);
 #ifdef DEBUG

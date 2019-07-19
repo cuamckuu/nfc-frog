@@ -4,6 +4,7 @@
 #include <map>
 
 #include "applicationhelper.h"
+#include "device_nfc.h"
 
 class CCInfo {
 
@@ -12,8 +13,8 @@ class CCInfo {
 
   public:
     int extractAppResponse(Application const &, APDU const &);
-    int extractLogEntries();
-    int extractBaseRecords();
+    int extractLogEntries(DeviceNFC &device);
+    int extractBaseRecords(DeviceNFC &device);
 
     void printAll() const;
     void printPaylog() const;

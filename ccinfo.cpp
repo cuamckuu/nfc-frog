@@ -54,10 +54,10 @@ int CCInfo::extractAppResponse(Application const &app,
     }
 }
 
-int CCInfo::extractLogEntries() {
+int CCInfo::extractLogEntries(DeviceNFC &device) {
 
     // First we get the log format
-    _logFormat = ApplicationHelper::executeCommand(
+    _logFormat = device.execute_command(
         Command::GET_DATA_LOG_FORMAT, sizeof(Command::GET_DATA_LOG_FORMAT),
         "GET DATA LOG FORMAT");
     if (_logFormat.size == 0) {
@@ -78,7 +78,7 @@ int CCInfo::extractLogEntries() {
         // Param 1: record number
         readRecord[4] = i + 1; // Starts from 1 and not 0
 
-        _logEntries[i] = ApplicationHelper::executeCommand(
+        _logEntries[i] = device.execute_command(
             readRecord, sizeof(readRecord), "READ RECORD: LOGFILE");
         if (_logEntries[i].size == 0)
             return 1;
@@ -87,7 +87,7 @@ int CCInfo::extractLogEntries() {
     return 0;
 }
 
-int CCInfo::extractBaseRecords() {
+int CCInfo::extractBaseRecords(DeviceNFC &device) {
 
     APDU readRecord;
     APDU res;
@@ -105,8 +105,7 @@ int CCInfo::extractBaseRecords() {
             // Param 1: record number
             readRecord.data[4] = record;
 
-            res = ApplicationHelper::executeCommand(
-                readRecord.data, readRecord.size, "READ RECORD BASE");
+            res = device.execute_command(readRecord.data, readRecord.size, "READ RECORD BASE");
 
             if (res.size == 0)
                 continue;
