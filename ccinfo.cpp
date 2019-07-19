@@ -332,81 +332,19 @@ void CCInfo::printPaylog() const {
     }
 }
 
-int CCInfo::getProcessingOptions() const {
-
-    size_t pdol_response_len = 0;
-    size_t size = _pdol.size;
-    byte_t const *buff = _pdol.data;
-
-    std::list<std::pair<unsigned short, byte_t>> tagList;
-
-    // Browser the PDOL field
-    // Retrieve tags required
-    for (size_t i = 0; i < size; ++i) {
-        // Offset on the first tag byte
-        std::pair<unsigned short, byte_t> p = {0, 0}; // The tag
-        if (buff[i] == 0x5F || buff[i] == 0x9F ||
-            buff[i] == 0xBF) { // 2-byte Tag
-            p.first = buff[i] << 8 | buff[i + 1];
-            i++;
-        } else { // 1-byte tag
-            p.first = buff[i];
-        }
-        i++; // Go to the associated length
-        p.second = buff[i];
-        pdol_response_len += buff[i];
-        tagList.push_back(p);
-    }
-
-    APDU gpo;
-    gpo.size = sizeof(Command::GPO_HEADER);
-    memcpy(gpo.data, Command::GPO_HEADER, sizeof(Command::GPO_HEADER));
-
-    gpo.data[gpo.size++] = pdol_response_len + 2; // Lc
-    gpo.data[gpo.size++] = 0x83;                  // Tag length
-    gpo.data[gpo.size++] = pdol_response_len;
-
-    // Add tag values
-    for (auto i : tagList) {
-        memcpy(&gpo.data[gpo.size], PDOLValues.at(i.first), i.second);
-        gpo.size += i.second;
-    }
-
-    gpo.data[gpo.size++] = 0; // Le
-
-    std::cout << "Send " << pdol_response_len << "-byte GPO ...";
-    Tools::printHex(gpo, "GPO SEND");
-    // EXECUTE COMMAND
-    APDU res = ApplicationHelper::executeCommand(gpo.data, gpo.size, "GPO");
-    if (res.size == 0) {
-        std::cerr << "Fail" << std::endl;
-        return 1;
-    }
-    std::cout << "OK" << std::endl;
-
-    return 0;
-}
-
 /* The following PDOL values insert a payment in the paylog, be careful when
    using it via getProcessingOptions()
  */
 const std::map<unsigned short, byte_t const *> CCInfo::PDOLValues = {
-    {0x9F59,
-     new byte_t[3]{0xC8, 0x80, 0x00}}, // Terminal Transaction Information
-    {0x9F5A,
-     new byte_t[1]{
-         0x00}}, // Terminal transaction Type. 0 = payment, 1 = withdraw
+    {0x9F59, new byte_t[3]{0xC8, 0x80, 0x00}}, // Terminal Transaction Information
+    {0x9F5A, new byte_t[1]{ 0x00}}, // Terminal transaction Type. 0 = payment, 1 = withdraw
     {0x9F58, new byte_t[1]{0x01}}, // Merchant Type Indicator
-    {0x9F66,
-     new byte_t[4]{0xB6, 0x20, 0xC0, 0x00}}, // Terminal Transaction Qualifiers
-    {0x9F02,
-     new byte_t[6]{0x00, 0x00, 0x10, 0x00, 0x00, 0x00}}, // amount, authorised
-    {0x9F03,
-     new byte_t[6]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}, // Amount, Other
+    {0x9F66, new byte_t[4]{0xB6, 0x20, 0xC0, 0x00}}, // Terminal Transaction Qualifiers
+    {0x9F02, new byte_t[6]{0x00, 0x00, 0x10, 0x00, 0x00, 0x00}}, // amount, authorised
+    {0x9F03, new byte_t[6]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}, // Amount, Other
     {0x9F1A, new byte_t[2]{0x01, 0x24}}, // Terminal country code
     {0x5F2A, new byte_t[2]{0x01, 0x24}}, // Transaction currency code
-    {0x95, new byte_t[5]{0x00, 0x00, 0x00, 0x00,
-                         0x00}},             // Terminal Verification Results
+    {0x95, new byte_t[5]{0x00, 0x00, 0x00, 0x00, 0x00}},             // Terminal Verification Results
     {0x9A, new byte_t[3]{0x15, 0x01, 0x01}}, // Transaction Date
     {0x9C, new byte_t[1]{0x00}},             // Transaction Type
     {0x9F37, new byte_t[4]{0x82, 0x3D, 0xDE, 0x7A}}}; // Unpredictable number
