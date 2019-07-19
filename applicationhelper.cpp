@@ -30,6 +30,13 @@ bool ApplicationHelper::checkTrailer() {
     return true;
 }
 
+template<class T>
+void parse_TLV(T *dest, byte_t *src, int &idx) {
+    byte_t len = src[++idx];
+    std::memcpy(dest, &src[++idx], len);
+    idx += len - 1;
+}
+
 AppList ApplicationHelper::getAll() {
     AppList list;
 
@@ -42,43 +49,25 @@ AppList ApplicationHelper::getAll() {
     /* szRx and abtRx are the same as the return value,
        we can use them directly as long as the software is not multithreated
     */
-    for (size_t i = 0; i < szRx; ++i) {
-        if (abtRx[i] == 0x61) { // Application template
+    int i = 0;
+    while (i < res.size - 2) {
+        if (res.data[i] == 0x61) { // Application template
+            byte_t app_len = res.data[++i];
             Application app;
-            ++i;
-            while (i < szRx &&
-                   abtRx[i] !=
-                       0x61) { // until the end of the buffer or the next entry
 
-                if (abtRx[i] == 0x4F) { // Application ID
-                    byte_t len = abtRx[++i];
-                    i++;
-
-                    if (len != 7)
-                        std::cerr << "Application id larger then 7 bytes, wtf. "
-                                     "Continue anyway. Its gonna crash"
-                                  << std::endl;
-                    memcpy(app.aid, &abtRx[i], len);
-                    i += len - 1;
-                }
-
-                if (abtRx[i] == 0x87) { // Application Priority indicator
-                    i += 2;
-                    app.priority = abtRx[i];
-                }
-                ++i;
-
-                if (abtRx[i] == 0x50) { // Application label
-                    byte_t len = abtRx[++i];
-                    i++;
-                    memcpy(app.name, &abtRx[i], len);
-                    app.name[len] = 0;
-                    i += len - 1;
+            for (int j = i; j < i + app_len; j++) {
+                if (res.data[j] == 0x4F) {
+                    parse_TLV(app.aid, res.data, j);
+                } else if (res.data[j] == 0x50) {
+                    parse_TLV(app.name, res.data, j);
+                } else if (res.data[j] == 0x87) {
+                    parse_TLV(&app.priority, res.data, j);
                 }
             }
             list.push_back(app);
-            --i;
+            i += app_len;
         }
+        i++;
     }
 
     return list;
