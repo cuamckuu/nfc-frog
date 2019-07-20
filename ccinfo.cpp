@@ -52,6 +52,8 @@ int CCInfo::extractAppResponse(Application const &app,
             i += len - 1;
         }
     }
+
+    return 0;
 }
 
 int CCInfo::extractLogEntries(DeviceNFC &device) {
@@ -181,7 +183,6 @@ void CCInfo::printTracksInfo() const {
       'F' if needed to ensure whole bytes (b)
     */
     byte_t const *buff = _track2EquivalentData.data;
-    size_t size = _track2EquivalentData.size;
 
     size_t i;
     std::cout << "PAN: ";
@@ -221,8 +222,7 @@ void CCInfo::printPaylog() const {
         // Read the log format to deduce what is in the log entry
         for (size_t i = 0; i < size; ++i) {
             if (format[i] == 0x9A) { // Date
-                i++;
-                size_t len = format[i];
+                size_t len = format[++i];
                 std::cout << _logFormatTags.at(0x9A) << ": ";
                 for (size_t j = 0; j < len; ++j) {
                     std::cout << (j == 0 ? "" : "/") << (j == 0 ? "20" : "")
@@ -230,8 +230,8 @@ void CCInfo::printPaylog() const {
                 }
                 std::cout << "; ";
             } else if (format[i] == 0x9C) { // Type
-                i++;
-                size_t len = format[i];
+                size_t len = format[++i];
+                (void)len;
                 std::cout << _logFormatTags.at(0x9C) << ": "
                           << (entry.data[e++] ? "Withdrawal" : "Payment")
                           << "; ";
@@ -244,8 +244,7 @@ void CCInfo::printPaylog() const {
                         std::cout << (j == 0 ? "" : ":")
                                   << HEX(entry.data[e++]);
                     std::cout << "; ";
-                } else if (format[i] == 0x5F &&
-                           format[i + 1] == 0x2A) { // Currency
+                } else if (format[i] == 0x5F && format[i + 1] == 0x2A) { // Currency
                     i += 2;
                     size_t len = format[i];
                     std::cout << _logFormatTags.at(0x5F2A) << ": ";
@@ -261,8 +260,7 @@ void CCInfo::printPaylog() const {
                         e += 2;
                     }
                     std::cout << "; ";
-                } else if (format[i] == 0x9F &&
-                           format[i + 1] == 0x02) { // Amount
+                } else if (format[i] == 0x9F && format[i + 1] == 0x02) { // Amount
                     i += 2;
                     size_t len = format[i]; // Len should always be 6
                     std::cout << _logFormatTags.at(0x9F02) << ": ";
@@ -283,8 +281,7 @@ void CCInfo::printPaylog() const {
                             std::cout << ".";
                     }
                     std::cout << "; ";
-                } else if (format[i] == 0x9F &&
-                           format[i + 1] == 0x4E) { // Merchant
+                } else if (format[i] == 0x9F && format[i + 1] == 0x4E) { // Merchant
                     i += 2;
                     size_t len = format[i];
                     std::cout << _logFormatTags.at(0x9F4E) << ": ";
