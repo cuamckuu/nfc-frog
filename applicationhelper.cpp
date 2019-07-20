@@ -37,8 +37,8 @@ void parse_TLV(T *dest, byte_t *src, int &idx) {
     idx += len - 1;
 }
 
-AppList ApplicationHelper::getAll(nfc_device *pnd) {
-    AppList list;
+std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
+    std::vector<Application> list;
 
     // SELECT PPSE to retrieve all applications
     APDU res = executeCommand(pnd, Command::SELECT_PPSE,
@@ -100,8 +100,7 @@ APDU ApplicationHelper::select_application(nfc_device *pnd, Application const &a
     return executeCommand(pnd, select_app, size, "SELECT APP");
 }
 
-APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, size_t size,
-                                       char const *name) {
+APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, size_t size, char const *name) {
     szRx = pn53x_transceive(pnd, command, size, abtRx, sizeof(abtRx), 0);
 #ifdef DEBUG
     if (szRx > 0) {
@@ -124,7 +123,7 @@ APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, s
     return ret;
 }
 
-void ApplicationHelper::printList(AppList const &list) {
+void ApplicationHelper::printList(std::vector<Application> const &list) {
     std::cout << list.size() << " Application(s) found:" << std::endl;
 
     std::cout << "-----------------" << std::endl;

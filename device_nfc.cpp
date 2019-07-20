@@ -68,7 +68,7 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
     return ApplicationHelper::executeCommand(pnd, command, size, name);
 }
 
-std::list<Application> DeviceNFC::load_applications_list() {
+std::vector<Application> DeviceNFC::load_applications_list() {
     return ApplicationHelper::getAll(pnd);
 }
 

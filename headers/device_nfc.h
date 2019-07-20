@@ -27,7 +27,7 @@ class DeviceNFC {
 
     ~DeviceNFC();
 
-    std::list<Application> load_applications_list();
+    std::vector<Application> load_applications_list();
     APDU execute_command(byte_t const *command, size_t size, char const *name);
 
   private:

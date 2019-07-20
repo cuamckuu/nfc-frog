@@ -11,37 +11,30 @@ extern "C" {
 #include "headers/ccinfo.h"
 #include "headers/tools.h"
 
-static int selectAndReadApplications(DeviceNFC &device) {
-
-    std::list<Application> list = device.load_applications_list();
+std::vector<CCInfo> extract_information(DeviceNFC &device) {
+    std::vector<Application> list = device.load_applications_list();
     ApplicationHelper::printList(list);
 
     std::vector<CCInfo> infos(list.size());
 
-    size_t i = 0;
-    for (Application app : list) {
+    for (int i = 0; i < list.size(); i++) {
+        Application &app = list[i];
         APDU res = ApplicationHelper::select_application(device.pnd, app);
+
         if (res.size == 0) {
-            std::cerr << "Unable to select application " << app.name
-                      << std::endl;
+            std::cerr << "Unable to select application " << app.name << std::endl;
             continue;
         }
-        infos[i].extractAppResponse(app, res);
 
+        infos[i].extractAppResponse(app, res);
         infos[i].extractBaseRecords(device);
         infos[i].extractLogEntries(device);
 
-        std::cerr << "App" << (char)('0' + app.priority) << " finished"
-                  << std::endl;
-
-        i++;
+        std::cerr << "App" << HEX(app.priority) << " finished" << std::endl;
     }
 
-    for (size_t i = 0; i < list.size(); ++i) {
-        infos[i].printAll();
-    }
 
-    return 0;
+    return infos;
 }
 
 int main() {
@@ -53,7 +46,11 @@ int main() {
         device.print_target_info();
     }
 
-    selectAndReadApplications(device);
+    std::vector<CCInfo> infos = extract_information(device);
+
+    for (CCInfo &info: infos) {
+        info.printAll();
+    }
 
     return 0;
 }
