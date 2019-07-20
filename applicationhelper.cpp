@@ -73,17 +73,7 @@ AppList ApplicationHelper::getAll(nfc_device *pnd) {
     return list;
 }
 
-APDU ApplicationHelper::selectByPriority(nfc_device *pnd, AppList const &list, byte_t priority) {
-
-    Application app;
-
-    // Pick the application with the given priority
-    for (Application a : list) {
-        if (a.priority == priority) {
-            app = a;
-            break;
-        }
-    }
+APDU ApplicationHelper::select_application(nfc_device *pnd, Application const &app) {
 
     // Prepare the SELECT command
     byte_t select_app[256];

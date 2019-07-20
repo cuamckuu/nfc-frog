@@ -4,6 +4,7 @@ extern "C" {
 }
 
 #include <iostream>
+#include <vector>
 
 #include "headers/device_nfc.h"
 #include "headers/applicationhelper.h"
@@ -11,19 +12,15 @@ extern "C" {
 #include "headers/tools.h"
 
 static int selectAndReadApplications(DeviceNFC &device) {
-    AppList list = device.load_applications_list();
 
-    if (list.size() == 0) {
-        std::cerr << "No application found using PPSE" << std::endl;
-        return 1;
-    }
-
+    std::list<Application> list = device.load_applications_list();
     ApplicationHelper::printList(list);
 
-    CCInfo infos[list.size()];
+    std::vector<CCInfo> infos(list.size());
+
     size_t i = 0;
     for (Application app : list) {
-        APDU res = ApplicationHelper::selectByPriority(device.pnd, list, app.priority);
+        APDU res = ApplicationHelper::select_application(device.pnd, app);
         if (res.size == 0) {
             std::cerr << "Unable to select application " << app.name
                       << std::endl;
