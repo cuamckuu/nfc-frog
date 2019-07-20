@@ -122,17 +122,3 @@ APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, s
     memcpy(ret.data, abtRx + 1, szRx - 1);
     return ret;
 }
-
-void ApplicationHelper::printList(std::vector<Application> const &list) {
-    std::cout << list.size() << " Application(s) found:" << std::endl;
-
-    std::cout << "-----------------" << std::endl;
-
-    for (Application a : list) {
-        std::cout << "Name: " << a.name << std::endl;
-        std::cout << "Priority: " << (char)('0' + a.priority) << std::endl;
-        Tools::printHex(a.aid, sizeof(a.aid), "AID");
-
-        std::cout << std::endl << "-----------------" << std::endl;
-    }
-}

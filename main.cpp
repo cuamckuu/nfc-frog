@@ -11,10 +11,7 @@ extern "C" {
 #include "headers/ccinfo.h"
 #include "headers/tools.h"
 
-std::vector<CCInfo> extract_information(DeviceNFC &device) {
-    std::vector<Application> list = device.load_applications_list();
-    ApplicationHelper::printList(list);
-
+std::vector<CCInfo> extract_information(DeviceNFC &device, std::vector<Application> &list) {
     std::vector<CCInfo> infos(list.size());
 
     for (int i = 0; i < list.size(); i++) {
@@ -33,7 +30,6 @@ std::vector<CCInfo> extract_information(DeviceNFC &device) {
         std::cerr << "App" << HEX(app.priority) << " finished" << std::endl;
     }
 
-
     return infos;
 }
 
@@ -46,7 +42,16 @@ int main() {
         device.print_target_info();
     }
 
-    std::vector<CCInfo> infos = extract_information(device);
+    std::vector<Application> list = device.load_applications_list();
+
+    for (Application &app: list) {
+        std::cout << "Name: " << app.name << std::endl;
+        std::cout << "Priority: " << HEX(app.priority) << std::endl;
+        Tools::printHex(app.aid, sizeof(app.aid), "AID");
+        std::cout << std::endl << "-----------------" << std::endl;
+    }
+
+    std::vector<CCInfo> infos = extract_information(device, list);
 
     for (CCInfo &info: infos) {
         info.printAll();
