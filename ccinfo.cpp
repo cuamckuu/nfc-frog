@@ -7,10 +7,8 @@
 CCInfo::CCInfo()
     : _pdol({0, {0}}), _track1DiscretionaryData({0, {0}}),
       _track2EquivalentData({0, {0}}), _logSFI(0), _logCount(0),
-      _logFormat({0, {0}}), _logEntries({{0, {0}}}) {
-    bzero(_languagePreference, sizeof(_languagePreference));
-    bzero(_cardholderName, sizeof(_cardholderName));
-}
+      _logFormat({0, {0}}), _logEntries({{0, {0}}})
+{ }
 
 int CCInfo::extractAppResponse(Application const &app,
                                APDU const &appResponse) {

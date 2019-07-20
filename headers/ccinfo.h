@@ -24,9 +24,8 @@ class CCInfo {
 
   private:
     Application _application;
-    char
-        _languagePreference[56]; // Handle quite a lot of languages if needed...
-    char _cardholderName[56];    // Max size should never exceed 26
+    char _languagePreference[56] = {0}; // Handle quite a lot of languages if needed...
+    char _cardholderName[56] = {0};    // Max size should never exceed 26
 
     // Information to print or to temporary save
     // Not real APDUS!! The structure is used to save the length

@@ -76,9 +76,8 @@ std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
 APDU ApplicationHelper::select_application(nfc_device *pnd, Application const &app) {
 
     // Prepare the SELECT command
-    byte_t select_app[256];
+    byte_t select_app[256] = {0};
     byte_t size = 0;
-    bzero(select_app, 256);
 
     // Header
     memcpy(select_app, Command::SELECT_APP_HEADER,
