@@ -42,13 +42,13 @@ std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
     /* szRx and abtRx are the same as the return value,
        we can use them directly as long as the software is not multithreated
     */
-    int i = 0;
+    size_t i = 0;
     while (i < res.size - 2) {
         if (res.data[i] == 0x61) { // Application template
             byte_t app_len = res.data[++i];
             Application app;
 
-            for (int j = i; j < i + app_len; j++) {
+            for (size_t j = i; j < i + app_len; j++) {
                 if (res.data[j] == 0x4F) {
                     parse_TLV(app.aid, res.data, j);
                 } else if (res.data[j] == 0x50) {

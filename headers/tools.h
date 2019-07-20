@@ -55,11 +55,13 @@ class Tools {
                          std::string const & = "");
 };
 
-template<class T>
-void parse_TLV(T *dest, byte_t *src, int &idx) {
+template<class DestT, class SrcT>
+byte_t parse_TLV(DestT *dest, SrcT *src, size_t &idx) {
     byte_t len = src[++idx];
     std::memcpy(dest, &src[++idx], len);
     idx += len - 1;
+
+    return len;
 }
 
 #endif // __TOOLS_HH__
