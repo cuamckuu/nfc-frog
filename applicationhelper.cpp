@@ -30,13 +30,6 @@ bool ApplicationHelper::is_status_ok() {
     return false;
 }
 
-template<class T>
-void parse_TLV(T *dest, byte_t *src, int &idx) {
-    byte_t len = src[++idx];
-    std::memcpy(dest, &src[++idx], len);
-    idx += len - 1;
-}
-
 std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
     std::vector<Application> list;
 

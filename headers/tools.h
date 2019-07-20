@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <cstring>
 
 #include <nfc/nfc-types.h>
 
@@ -53,5 +54,12 @@ class Tools {
     static void printHex(byte_t const *str, size_t size,
                          std::string const & = "");
 };
+
+template<class T>
+void parse_TLV(T *dest, byte_t *src, int &idx) {
+    byte_t len = src[++idx];
+    std::memcpy(dest, &src[++idx], len);
+    idx += len - 1;
+}
 
 #endif // __TOOLS_HH__
