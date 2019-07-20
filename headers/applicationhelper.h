@@ -9,7 +9,7 @@
 class ApplicationHelper {
 
   public:
-    static bool checkTrailer();
+    static bool is_status_ok();
     static std::vector<Application> getAll(nfc_device *pnd);
     static APDU select_application(nfc_device *pnd, Application const &app);
     static APDU executeCommand(nfc_device *pnd, byte_t const *command, size_t size, char const *name);

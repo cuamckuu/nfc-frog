@@ -20,14 +20,14 @@ int pn53x_transceive(struct nfc_device *pnd, const uint8_t *pbtTx,
 byte_t ApplicationHelper::abtRx[MAX_FRAME_LEN];
 int ApplicationHelper::szRx;
 
-bool ApplicationHelper::checkTrailer() {
+bool ApplicationHelper::is_status_ok() {
     if (szRx < 2)
-        return true;
-
-    if (abtRx[szRx - 2] == 0x90 && abtRx[szRx - 1] == 0)
         return false;
 
-    return true;
+    if (abtRx[szRx - 2] == 0x90 && abtRx[szRx - 1] == 0)
+        return true;
+
+    return false;
 }
 
 template<class T>
@@ -74,17 +74,14 @@ std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
 }
 
 APDU ApplicationHelper::select_application(nfc_device *pnd, Application const &app) {
-
     // Prepare the SELECT command
     byte_t select_app[256] = {0};
-    byte_t size = 0;
+    byte_t size = sizeof(Command::SELECT_APP_HEADER);
 
-    // Header
-    memcpy(select_app, Command::SELECT_APP_HEADER,
-           sizeof(Command::SELECT_APP_HEADER));
-    size = sizeof(Command::SELECT_APP_HEADER);
+    // SELECT by name first or only occurence
+    memcpy(select_app, Command::SELECT_APP_HEADER, size);
 
-    // Len
+    // Lc (Length) block
     select_app[size] = sizeof(app.aid);
     size += 1;
 
@@ -92,7 +89,7 @@ APDU ApplicationHelper::select_application(nfc_device *pnd, Application const &a
     memcpy(select_app + size, app.aid, sizeof(app.aid));
     size += sizeof(app.aid);
 
-    // Implicit 0x00 at the end due to bzero
+    // Increment size to have extra 0x00 in the end
     size += 1;
 
     // EXECUTE SELECT
@@ -110,7 +107,7 @@ APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, s
     }
 #endif
 
-    if (szRx < 0 || checkTrailer()) {
+    if (szRx < 0 || !is_status_ok()) {
         if (szRx < 0)
             nfc_perror(pnd, name);
         return {0, {0}};
