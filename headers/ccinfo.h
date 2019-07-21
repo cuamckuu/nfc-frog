@@ -12,9 +12,9 @@ class CCInfo {
     CCInfo();
 
   public:
-    int extractAppResponse(Application const &, APDU const &);
+    int parse_response(Application const &, APDU const &);
+    int read_record(DeviceNFC &device);
     int extractLogEntries(DeviceNFC &device);
-    int extractBaseRecords(DeviceNFC &device);
 
     void printAll() const;
     void printPaylog() const;
@@ -48,9 +48,10 @@ class CCInfo {
     static const std::map<unsigned short, std::string> _countryCodes;
 
     static const byte_t _FROM_SFI = 1;
-    static const byte_t _TO_SFI = 2;
+    static const byte_t _TO_SFI = 31; // Max SFI is 2^5 - 1
     static const byte_t _FROM_RECORD = 1;
-    static const byte_t _TO_RECORD = 2;
+    static const byte_t _TO_RECORD = 8;
+    //static const byte_t _TO_RECORD = 255; // Max records is 255 but it's faster to check only 10
 };
 
 #endif // __CCINFO_HH__

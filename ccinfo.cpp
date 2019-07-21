@@ -10,7 +10,7 @@ CCInfo::CCInfo()
       _logFormat({0, {0}}), _logEntries({{0, {0}}})
 { }
 
-int CCInfo::extractAppResponse(Application const &app, APDU const &appResponse) {
+int CCInfo::parse_response(Application const &app, APDU const &appResponse) {
     _application = app;
 
     byte_t const *buff = appResponse.data;
@@ -27,16 +27,16 @@ int CCInfo::extractAppResponse(Application const &app, APDU const &appResponse) 
             i += 2;
             byte_t len = buff[i++];
 
-            // Parse it now. Extract the LOG ENTRY
+            // Extract the LOG ENTRY
             for (size_t j = 0; j < len; ++j) {
                 if (j + 1 < len && buff[i + j] == 0x9F && buff[i + j + 1] == 0x4D) { // Log Entry
-                    j += 3;                    // Size = 2 so we don't save it
+                    j += 2 + 1; // Size = 2 so we don't save it
                     _logSFI = buff[i + j++];
                     _logCount = buff[i + j];
                 }
-            } // End read LOG ENTRY
+            }
             i += len - 1;
-        } else if (buff[i] == 0x50) {
+        } else if (buff[i] == 0x50) { // Card name
             parse_TLV(_application.name, buff, i);
         }
     }
@@ -72,13 +72,13 @@ int CCInfo::extractLogEntries(DeviceNFC &device) {
     return 0;
 }
 
-int CCInfo::extractBaseRecords(DeviceNFC &device) {
+int CCInfo::read_record(DeviceNFC &device) {
     APDU readRecord;
-    APDU res;
-
     readRecord.size = sizeof(Command::READ_RECORD);
     memcpy(readRecord.data, Command::READ_RECORD, readRecord.size);
 
+    APDU res;
+    bool no_more_records = false;
     for (size_t sfi = _FROM_SFI; sfi <= _TO_SFI; ++sfi) {
         // Param 2: First 5 bits = SFI.
         //          Three other bits must be set to 1|0|0 (P1 is a record
@@ -86,13 +86,18 @@ int CCInfo::extractBaseRecords(DeviceNFC &device) {
         readRecord.data[5] = (sfi << 3) | (1 << 2);
 
         for (size_t record = _FROM_RECORD; record <= _TO_RECORD; ++record) {
-            // Param 1: record number
-            readRecord.data[4] = record;
+            if (no_more_records) {
+                break;
+            }
 
-            res = device.execute_command(readRecord.data, readRecord.size, "READ RECORD BASE");
+            readRecord.data[4] = record; // Param 1: record number
 
-            if (res.size == 0)
-                continue;
+            res = device.execute_command(readRecord.data, readRecord.size, "READ RECORD");
+
+            if (res.size >= 2 && res.data[0] == 0x6A && res.data[1] == 0x82) { // File Place error
+                no_more_records = true;
+                break;
+            }
 
             for (size_t i = 0; i < res.size; ++i) {
                 if (res.data[i] == 0x57) { // Track 2 equivalent data
@@ -106,6 +111,7 @@ int CCInfo::extractBaseRecords(DeviceNFC &device) {
                 }
             }
         }
+
     }
 
     return 0;
