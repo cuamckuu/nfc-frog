@@ -18,44 +18,44 @@ std::vector<CCInfo> extract_information(DeviceNFC &device, std::vector<Applicati
         Application &app = list[i];
         APDU res = ApplicationHelper::select_application(device.pnd, app);
 
-        if (res.size == 0) {
-            std::cerr << "Unable to select application " << app.name << std::endl;
-            continue;
-        }
-
-        infos[i].extractAppResponse(app, res);
-        infos[i].extractBaseRecords(device);
+        infos[i].parse_response(app, res);
+        infos[i].read_record(device);
         infos[i].extractLogEntries(device);
-
-        std::cerr << "App" << HEX(app.priority) << " finished" << std::endl;
     }
 
     return infos;
 }
 
 int main() {
-    DeviceNFC device;
-    std::cout << "NFC reader: " << device.get_name() << " opened.\n";
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(0);
 
-    bool is_ok = device.pool_target();
-    if (is_ok) {
-        device.print_target_info();
+    try {
+        DeviceNFC device;
+        std::cout << "NFC reader: " << device.get_name() << " opened.\n";
+
+        bool is_ok = device.pool_target();
+        if (is_ok) {
+        //    device.print_target_info();
+        }
+
+        std::vector<Application> list = device.load_applications_list();
+
+        std::vector<CCInfo> infos = extract_information(device, list);
+/*
+        for (Application &app: list) {
+            std::cout << "Name: " << app.name << std::endl;
+            std::cout << "Priority: " << HEX(app.priority) << std::endl;
+            Tools::printHex(app.aid, sizeof(app.aid), "AID");
+        }
+
+        for (CCInfo &info: infos) {
+            info.printAll();
+        }
+*/
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return 1;
     }
-
-    std::vector<Application> list = device.load_applications_list();
-
-    for (Application &app: list) {
-        std::cout << "Name: " << app.name << std::endl;
-        std::cout << "Priority: " << HEX(app.priority) << std::endl;
-        Tools::printHex(app.aid, sizeof(app.aid), "AID");
-        std::cout << std::endl << "-----------------" << std::endl;
-    }
-
-    std::vector<CCInfo> infos = extract_information(device, list);
-
-    for (CCInfo &info: infos) {
-        info.printAll();
-    }
-
     return 0;
 }
