@@ -22,6 +22,7 @@ class CCInfo {
 
     int getProcessingOptions() const;
 
+
   private:
     Application _application;
     char _languagePreference[56] = {0}; // Handle quite a lot of languages if needed...
@@ -48,10 +49,12 @@ class CCInfo {
     static const std::map<unsigned short, std::string> _countryCodes;
 
     static const byte_t _FROM_SFI = 1;
-    static const byte_t _TO_SFI = 31; // Max SFI is 2^5 - 1
+    static const byte_t _TO_SFI = 10; // 10 is max by spec
+    //static const byte_t _TO_SFI = 31; // Max SFI is 2^5 - 1
+
     static const byte_t _FROM_RECORD = 1;
-    static const byte_t _TO_RECORD = 8;
-    //static const byte_t _TO_RECORD = 255; // Max records is 255 but it's faster to check only 10
+    static const byte_t _TO_RECORD = 16; // Fast mode, usual is's enought
+    //static const byte_t _TO_RECORD = 255; // Max records is 255
 };
 
 #endif // __CCINFO_HH__
