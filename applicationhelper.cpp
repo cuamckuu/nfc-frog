@@ -86,15 +86,9 @@ APDU ApplicationHelper::select_application(nfc_device *pnd, Application const &a
 APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, size_t size, char const *name) {
     szRx = pn53x_transceive(pnd, command, size, abtRx, sizeof(abtRx), 0);
 
-    if (szRx > 0) {
+    if (szRx > 3) {
         Tools::printHex(abtRx + 1, szRx - 1, std::string(std::string("Answer from ") + name));
         //Tools::printChar(abtRx, szRx, std::string(std::string("Answer from ") + name));
-    }
-
-    if (szRx < 0 || !is_status_ok()) {
-        if (szRx < 0)
-            nfc_perror(pnd, name);
-        return {0, {0}};
     }
 
     APDU ret;
