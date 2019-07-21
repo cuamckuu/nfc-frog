@@ -43,10 +43,6 @@ bool DeviceNFC::pool_target() {
         return true;
     }
 
-    if (err < 0) {
-        throw std::runtime_error("Can't find card");
-    }
-
     return false;
 }
 
