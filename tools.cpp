@@ -42,8 +42,7 @@ void Tools::printHex(APDU const &apdu, std::string const &label) {
     printHex(apdu.data, apdu.size, label);
 }
 
-void Tools::printChar(byte_t const *str, size_t size,
-                      std::string const &label) {
+void Tools::printChar(byte_t const *str, size_t size, std::string const &label) {
     if (label.size() > 0)
         std::cout << label << ": ";
 
@@ -54,13 +53,12 @@ void Tools::printChar(byte_t const *str, size_t size,
 }
 
 void Tools::printHex(byte_t const *str, size_t size, std::string const &label) {
-    if (label.size() > 0)
+    if (label.size() > 0) {
         std::cout << label << ": ";
+    }
 
-    std::cout << std::hex << std::uppercase;
-    for (size_t i = 0; i < size; ++i)
-        std::cout << std::setw(2) << std::setfill('0') << (unsigned int)str[i];
-    std::cout << std::dec;
-
+    for (size_t i = 0; i < size; ++i) {
+        std::cout << HEX(str[i]) << " ";
+    }
     std::cout << std::endl;
 }
