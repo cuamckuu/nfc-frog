@@ -10,44 +10,34 @@ CCInfo::CCInfo()
       _logFormat({0, {0}}), _logEntries({{0, {0}}})
 { }
 
-int CCInfo::extractAppResponse(Application const &app,
-                               APDU const &appResponse) {
-
+int CCInfo::extractAppResponse(Application const &app, APDU const &appResponse) {
     _application = app;
 
     byte_t const *buff = appResponse.data;
     size_t size = appResponse.size;
 
     for (size_t i = 0; i < size; ++i) {
-        if (i + 1 < size && buff[i] == 0x5F &&
-            buff[i + 1] == 0x2D) { // Language preference
+        if (i + 1 < size && buff[i] == 0x5F && buff[i + 1] == 0x2D) { // Language preference
+            parse_TLV(_languagePreference, buff, ++i);
+
+        } else if (i + 1 < size && buff[i] == 0x9F && buff[i + 1] == 0x38) { // PDOL
+            _pdol.size = parse_TLV(_pdol.data, buff, ++i);
+
+        } else if (i + 1 < size && buff[i] == 0xBF && buff[i + 1] == 0x0C) { // File Control Information
             i += 2;
             byte_t len = buff[i++];
-            memcpy(_languagePreference, &buff[i], len);
-            i += len - 1;
-        } else if (i + 1 < size && buff[i] == 0x9F &&
-                   buff[i + 1] == 0x38) { // PDOL
-            i += 2;
-            // We just store it to parse it later
-            _pdol.size = buff[i++];
-            ;
-            memcpy(_pdol.data, &buff[i], _pdol.size);
-            i += _pdol.size - 1;
-        } else if (i + 1 < size && buff[i] == 0xBF &&
-                   buff[i + 1] == 0x0C) { // File Control Information
-            i += 2;
-            byte_t len = buff[i++];
-            ;
+
             // Parse it now. Extract the LOG ENTRY
             for (size_t j = 0; j < len; ++j) {
-                if (j + 1 < len && buff[i + j] == 0x9F &&
-                    buff[i + j + 1] == 0x4D) { // Log Entry
+                if (j + 1 < len && buff[i + j] == 0x9F && buff[i + j + 1] == 0x4D) { // Log Entry
                     j += 3;                    // Size = 2 so we don't save it
                     _logSFI = buff[i + j++];
                     _logCount = buff[i + j];
                 }
             } // End read LOG ENTRY
             i += len - 1;
+        } else if (buff[i] == 0x50) {
+            parse_TLV(_application.name, buff, i);
         }
     }
 
@@ -55,14 +45,11 @@ int CCInfo::extractAppResponse(Application const &app,
 }
 
 int CCInfo::extractLogEntries(DeviceNFC &device) {
-
     // First we get the log format
-    _logFormat = device.execute_command(
-        Command::GET_DATA_LOG_FORMAT, sizeof(Command::GET_DATA_LOG_FORMAT),
-        "GET DATA LOG FORMAT");
+    _logFormat = device.execute_command(Command::GET_DATA_LOG_FORMAT, sizeof(Command::GET_DATA_LOG_FORMAT), "GET DATA LOG FORMAT");
+
     if (_logFormat.size == 0) {
-        std::cerr << "Unable to get the log format. Reading aborted."
-                  << std::endl;
+        std::cerr << "Unable to get the log format. Reading aborted." << std::endl;
         return 1;
     }
 
@@ -74,12 +61,10 @@ int CCInfo::extractLogEntries(DeviceNFC &device) {
     readRecord[5] = (_logSFI << 3) | (1 << 2);
 
     for (size_t i = 0; i < _logCount; ++i) {
-
         // Param 1: record number
         readRecord[4] = i + 1; // Starts from 1 and not 0
 
-        _logEntries[i] = device.execute_command(
-            readRecord, sizeof(readRecord), "READ RECORD: LOGFILE");
+        _logEntries[i] = device.execute_command(readRecord, sizeof(readRecord), "READ RECORD: LOGFILE");
         if (_logEntries[i].size == 0)
             return 1;
     }
@@ -88,12 +73,11 @@ int CCInfo::extractLogEntries(DeviceNFC &device) {
 }
 
 int CCInfo::extractBaseRecords(DeviceNFC &device) {
-
     APDU readRecord;
     APDU res;
 
     readRecord.size = sizeof(Command::READ_RECORD);
-    memcpy(readRecord.data, Command::READ_RECORD, sizeof(Command::READ_RECORD));
+    memcpy(readRecord.data, Command::READ_RECORD, readRecord.size);
 
     for (size_t sfi = _FROM_SFI; sfi <= _TO_SFI; ++sfi) {
         // Param 2: First 5 bits = SFI.
@@ -110,56 +94,37 @@ int CCInfo::extractBaseRecords(DeviceNFC &device) {
             if (res.size == 0)
                 continue;
 
-            byte_t const *buff = res.data;
-            size_t size = res.size;
+            for (size_t i = 0; i < res.size; ++i) {
+                if (res.data[i] == 0x57) { // Track 2 equivalent data
+                    _track2EquivalentData.size = parse_TLV(_track2EquivalentData.data, res.data, i);
 
-            for (size_t i = 0; i < size; ++i) {
-                if (buff[i] == 0x57 && _track2EquivalentData.size ==
-                                           0) { // Track 2 equivalent data
-                    i++;
-                    _track2EquivalentData.size = buff[i++];
-                    memcpy(_track2EquivalentData.data, &buff[i],
-                           _track2EquivalentData.size);
-                    i += _track2EquivalentData.size - 1;
-                } else if (i + 1 < size && buff[i] == 0x5F &&
-                           buff[i + 1] == 0x20) { // Cardholder name
-                    i += 2;
-                    byte_t len = buff[i++];
-                    if (len > 2) // We dont save when the name is "/"
-                        memcpy(_cardholderName, &buff[i], len);
-                    i += len - 1;
-                } else if (i + 1 < size && _track1DiscretionaryData.size == 0 &&
-                           buff[i] == 0x9F &&
-                           buff[i + 1] == 0x1F) { // Track 1 discretionary data
-                    i += 2;
-                    // We just store it to parse it later
-                    _track1DiscretionaryData.size = buff[i++];
-                    ;
-                    memcpy(_track1DiscretionaryData.data, &buff[i],
-                           _track1DiscretionaryData.size);
-                    i += _track1DiscretionaryData.size - 1;
+                } else if (i + 1 < res.size && res.data[i] == 0x5F && res.data[i + 1] == 0x20) { // Cardholder name
+                    parse_TLV(_cardholderName, res.data, ++i);
+
+                } else if (i + 1 < res.size  && res.data[i] == 0x9F && res.data[i + 1] == 0x1F) { // Track 1 discretionary data
+                    _track1DiscretionaryData.size = parse_TLV(_track1DiscretionaryData.data, res.data, ++i);
                 }
             }
         }
     }
+
     return 0;
 }
 
 void CCInfo::printAll() const {
 
     std::cout << "----------------------------------" << std::endl;
-    std::cout << "----------------------------------" << std::endl;
     std::cout << "-- Application --" << std::endl;
     std::cout << "----------------------------------" << std::endl;
     std::cout << "Name: " << _application.name << std::endl;
-    std::cout << "Priority: " << (char)('0' + _application.priority)
-              << std::endl;
+    std::cout << "Priority: " << HEX(_application.priority) << std::endl;
     Tools::printHex(_application.aid, sizeof(_application.aid), "AID");
 
     std::cout << "-----------------" << std::endl;
     Tools::print(_languagePreference, "Language Preference");
     Tools::print(_cardholderName, "Cardholder Name");
-    //  Tools::printHex(_pdol, "PDOL");
+
+    Tools::printHex(_pdol, "PDOL");
     Tools::printHex(_track1DiscretionaryData, "Track 1 Discretionary data");
     Tools::printHex(_track2EquivalentData, "Track 2 equivalent data");
 
