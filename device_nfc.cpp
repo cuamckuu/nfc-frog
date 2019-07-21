@@ -19,11 +19,12 @@ DeviceNFC::DeviceNFC() {
         throw std::runtime_error("Unable to open NFC device");
     }
 
-    if (nfc_initiator_init(pnd) < 0) {
+    int err = nfc_initiator_init(pnd);
+    if (err < 0) {
         nfc_close(pnd);
         nfc_exit(context);
 
-        throw std::runtime_error(nfc_strerror(pnd));
+        throw std::runtime_error("Can't init card");
     }
 }
 
@@ -43,10 +44,7 @@ bool DeviceNFC::pool_target() {
     }
 
     if (err < 0) {
-        nfc_close(pnd);
-        nfc_exit(context);
-
-        throw std::runtime_error(nfc_strerror(pnd));
+        throw std::runtime_error("Can't find card");
     }
 
     return false;
