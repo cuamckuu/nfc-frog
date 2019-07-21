@@ -39,9 +39,6 @@ std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
     if (res.size == 0)
         return list;
 
-    /* szRx and abtRx are the same as the return value,
-       we can use them directly as long as the software is not multithreated
-    */
     size_t i = 0;
     while (i < res.size - 2) {
         if (res.data[i] == 0x61) { // Application template
@@ -51,8 +48,6 @@ std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
             for (size_t j = i; j < i + app_len; j++) {
                 if (res.data[j] == 0x4F) {
                     parse_TLV(app.aid, res.data, j);
-                } else if (res.data[j] == 0x50) {
-                    parse_TLV(app.name, res.data, j);
                 } else if (res.data[j] == 0x87) {
                     parse_TLV(&app.priority, res.data, j);
                 }
@@ -85,20 +80,16 @@ APDU ApplicationHelper::select_application(nfc_device *pnd, Application const &a
     // Increment size to have extra 0x00 in the end
     size += 1;
 
-    // EXECUTE SELECT
     return executeCommand(pnd, select_app, size, "SELECT APP");
 }
 
 APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, size_t size, char const *name) {
     szRx = pn53x_transceive(pnd, command, size, abtRx, sizeof(abtRx), 0);
-#ifdef DEBUG
+
     if (szRx > 0) {
-        Tools::printHex(abtRx + 1, szRx - 1,
-                        std::string(std::string("Answer from ") + name));
-        //    Tools::printChar(abtRx, szRx, std::string(std::string("Answer from
-        //    ") + name));
+        Tools::printHex(abtRx + 1, szRx - 1, std::string(std::string("Answer from ") + name));
+        //Tools::printChar(abtRx, szRx, std::string(std::string("Answer from ") + name));
     }
-#endif
 
     if (szRx < 0 || !is_status_ok()) {
         if (szRx < 0)
