@@ -29,7 +29,7 @@ struct Application {
 };
 
 struct APDU {
-    int size;
+    size_t size;
     byte_t data[MAX_FRAME_LEN];
 };
 
