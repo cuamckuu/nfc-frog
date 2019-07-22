@@ -1,5 +1,6 @@
 #include <cstring>
 #include <iostream>
+#include <sstream>
 
 #include "headers/ccinfo.h"
 #include "headers/tools.h"
@@ -88,7 +89,9 @@ int CCInfo::read_record(DeviceNFC &device) {
 
             readRecord.data[4] = record; // Param 1: record number
 
-            res = device.execute_command(readRecord.data, readRecord.size, "READ RECORD");
+            std::stringstream ss;
+            ss << "READ RECORD from SFI" << (int)sfi << " record" << (int)record;
+            res = device.execute_command(readRecord.data, readRecord.size, ss.str().c_str());
 
             if (res.size >= 2 && res.data[0] == 0x6A && res.data[1] == 0x82) { // File Place error
                 break;
