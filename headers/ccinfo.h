@@ -22,6 +22,8 @@ class CCInfo {
 
     int getProcessingOptions() const;
 
+    static void set_full_mode();
+
 
   private:
     Application _application;
@@ -48,13 +50,13 @@ class CCInfo {
     static const std::map<unsigned short, std::string> _currencyCodes;
     static const std::map<unsigned short, std::string> _countryCodes;
 
-    static const byte_t _FROM_SFI = 1;
-    static const byte_t _TO_SFI = 10; // 10 is max by spec
-    //static const byte_t _TO_SFI = 31; // Max SFI is 2^5 - 1
+    static byte_t _FROM_SFI;
+    static byte_t _TO_SFI; // 10 is max by spec
+    //static byte_t _TO_SFI; // Max SFI is 2^5 - 1
 
-    static const byte_t _FROM_RECORD = 1;
-    static const byte_t _TO_RECORD = 16; // Fast mode, usual is's enought
-    //static const byte_t _TO_RECORD = 255; // Max records is 255
+    static byte_t _FROM_RECORD;
+    static byte_t _TO_RECORD; // Fast mode, usual is's enought
+    //static byte_t _TO_RECORD; // Max records is 255
 };
 
 #endif // __CCINFO_HH__
