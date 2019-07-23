@@ -24,8 +24,7 @@ std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
     std::vector<Application> list;
 
     // SELECT PPSE to retrieve all applications
-    APDU res = executeCommand(pnd, Command::SELECT_PPSE,
-                              sizeof(Command::SELECT_PPSE), "SELECT PPSE");
+    APDU res = executeCommand(pnd, Command::SELECT_PPSE, sizeof(Command::SELECT_PPSE), "SELECT PPSE");
     if (res.size == 0)
         return list;
 
@@ -78,7 +77,6 @@ APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, s
 
     if (szRx > 3) {
         Tools::printHex(abtRx + 1, szRx - 1, std::string(std::string("Answer from ") + name));
-        //Tools::printChar(abtRx, szRx, std::string(std::string("Answer from ") + name));
     }
 
     APDU ret;
