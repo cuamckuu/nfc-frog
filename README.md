@@ -32,3 +32,8 @@ Use at your own risk.
 Feel free to contribute.
 
 Have fun!
+
+==============
+
+Requirements:
+libnfc (>= 1.7.1) -> For later versions, please update the pn52x_transceive() prototype if needed, as it is not included in nfc.h
