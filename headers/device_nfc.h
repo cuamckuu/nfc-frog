@@ -34,10 +34,6 @@ class DeviceNFC {
     APDU read_record(byte_t sfi, byte_t record_number);
 
   private:
-    byte_t abtRx[MAX_FRAME_LEN] = {};
-    int szRx = 0;
-
-  public:
     nfc_target nt;
     nfc_device *pnd = nullptr;
     static nfc_context *context;
