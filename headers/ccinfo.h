@@ -16,9 +16,7 @@ class CCInfo {
     int read_record(DeviceNFC &device);
     int extractLogEntries(DeviceNFC &device);
 
-    void printAll() const;
     void printPaylog() const;
-    void printTracksInfo() const;
 
     int getProcessingOptions() const;
 

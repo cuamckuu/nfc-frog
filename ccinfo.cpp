@@ -123,62 +123,6 @@ int CCInfo::read_record(DeviceNFC &device) {
     return 0;
 }
 
-void CCInfo::printAll() const {
-
-    std::cout << "----------------------------------" << std::endl;
-    std::cout << "-- Application --" << std::endl;
-    std::cout << "----------------------------------" << std::endl;
-    std::cout << "Name: " << _application.name << std::endl;
-    std::cout << "Priority: " << HEX(_application.priority) << std::endl;
-    Tools::printHex(_application.aid, sizeof(_application.aid), "AID");
-
-    std::cout << "-----------------" << std::endl;
-    Tools::print(_languagePreference, "Language Preference");
-    Tools::print(_cardholderName, "Cardholder Name");
-
-    Tools::printHex(_pdol, "PDOL");
-    Tools::printHex(_track1DiscretionaryData, "Track 1 Discretionary data");
-    Tools::printHex(_track2EquivalentData, "Track 2 equivalent data");
-
-    printTracksInfo();
-
-    std::cout << "Log count: " << (int)_logCount << std::endl;
-
-    printPaylog();
-}
-
-void CCInfo::printTracksInfo() const {
-    // Track 2
-    /* Description (from emvlab.org)
-      Contains the data elements of track 2 according to ISO/IEC 7813, excluding
-      start sentinel, end sentinel, and Longitudinal Redundancy Check (LRC), as
-      follows: Primary Account Number (n, var. up to 19) Field Separator (Hex
-      'D') (b) Expiration Date (YYMM) (n 4) Service Code (n 3) Discretionary
-      Data (defined by individual payment systems) (n, var.) Pad with one Hex
-      'F' if needed to ensure whole bytes (b)
-    */
-    byte_t const *buff = _track2EquivalentData.data;
-
-    size_t i;
-    std::cout << "PAN: ";
-    for (i = 0; i < 8; ++i) {
-        std::cout << HEX(buff[i]) << (i & 1 ? " " : "");
-    }
-    std::cout << std::endl;
-    // Separator now is only 4-bit long, seriously?.. -_-
-    // Next 2 bytes after the separator are the expiry date
-    // So we must pick this:
-    // DY YM M*
-    //  ^ ^^ ^
-    byte_t year = buff[i++] << 4;
-    year |= buff[i] >> 4;
-    byte_t month = buff[i++] << 4;
-    month |= buff[i] >> 4;
-
-    std::cout << "Expiry date: " << HEX(month) << "/20" << HEX(year)
-              << std::endl;
-}
-
 void CCInfo::printPaylog() const {
 
     std::cout << "-----------------" << std::endl;
