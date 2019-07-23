@@ -59,7 +59,15 @@ std::string DeviceNFC::get_name() {
 }
 
 APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *name) {
-    return ApplicationHelper::executeCommand(pnd, command, size, name);
+    APDU ret = {0, {0}};
+    ret.size = pn53x_transceive(pnd, command, size, ret.data, sizeof(ret.data), 0);
+    // Be careful, ret.data[0] == 0x00, due to libnfc, then real data comes
+
+    if (ret.size > 3) {
+        Tools::printHex(ret.data + 1, ret.size - 1, std::string(std::string("Answer from ") + name));
+    }
+
+    return ret;
 }
 
 std::vector<Application> DeviceNFC::load_applications_list() {

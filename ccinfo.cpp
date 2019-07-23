@@ -82,11 +82,11 @@ int CCInfo::extractLogEntries(DeviceNFC &device) {
 }
 
 int CCInfo::read_record(DeviceNFC &device) {
-    APDU readRecord;
+    APDU readRecord = {0, {0}};
     readRecord.size = sizeof(Command::READ_RECORD);
     memcpy(readRecord.data, Command::READ_RECORD, readRecord.size);
 
-    APDU res;
+    APDU res = {0, {0}};
     for (size_t sfi = _FROM_SFI; sfi <= _TO_SFI; ++sfi) {
         // Param 2: First 5 bits = SFI.
         //          Three other bits must be set to 1|0|0 (P1 is a record
@@ -101,7 +101,7 @@ int CCInfo::read_record(DeviceNFC &device) {
             ss << "READ RECORD from SFI" << (int)sfi << " record" << (int)record;
             res = device.execute_command(readRecord.data, readRecord.size, ss.str().c_str());
 
-            if (res.size >= 2 && res.data[0] == 0x6A && res.data[1] == 0x82) { // File Place error
+            if (res.size >= 2 && res.data[1] == 0x6A && res.data[2] == 0x82) { // File Place error
                 break;
             }
 
