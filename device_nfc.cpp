@@ -70,6 +70,27 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
     return ret;
 }
 
+APDU DeviceNFC::select_application(Application &app) {
+    // Prepare the SELECT command
+    byte_t select_app[256] = {0};
+    byte_t size = sizeof(Command::SELECT_APP_HEADER);
+
+    // SELECT by name first or only occurence
+    memcpy(select_app, Command::SELECT_APP_HEADER, size);
+
+    // Lc (Length) block
+    select_app[size++] = sizeof(app.aid);
+
+    // AID
+    memcpy(select_app + size, app.aid, sizeof(app.aid));
+    size += sizeof(app.aid);
+
+    // Increment size to have extra 0x00 in the end
+    size += 1;
+
+    return execute_command(select_app, size, "SELECT APP");
+}
+
 std::vector<Application> DeviceNFC::load_applications_list() {
     return ApplicationHelper::getAll(pnd);
 }
