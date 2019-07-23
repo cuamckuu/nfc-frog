@@ -50,28 +50,6 @@ std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
     return list;
 }
 
-APDU ApplicationHelper::select_application(nfc_device *pnd, Application const &app) {
-    // Prepare the SELECT command
-    byte_t select_app[256] = {0};
-    byte_t size = sizeof(Command::SELECT_APP_HEADER);
-
-    // SELECT by name first or only occurence
-    memcpy(select_app, Command::SELECT_APP_HEADER, size);
-
-    // Lc (Length) block
-    select_app[size] = sizeof(app.aid);
-    size += 1;
-
-    // AID
-    memcpy(select_app + size, app.aid, sizeof(app.aid));
-    size += sizeof(app.aid);
-
-    // Increment size to have extra 0x00 in the end
-    size += 1;
-
-    return executeCommand(pnd, select_app, size, "SELECT APP");
-}
-
 APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, size_t size, char const *name) {
     szRx = pn53x_transceive(pnd, command, size, abtRx, sizeof(abtRx), 0);
 
@@ -79,7 +57,7 @@ APDU ApplicationHelper::executeCommand(nfc_device *pnd, byte_t const *command, s
         Tools::printHex(abtRx + 1, szRx - 1, std::string(std::string("Answer from ") + name));
     }
 
-    APDU ret;
+    APDU ret = {0, {0}};
     ret.size = szRx - 1;
     memcpy(ret.data, abtRx + 1, szRx - 1);
     return ret;

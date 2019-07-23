@@ -18,7 +18,7 @@ std::vector<CCInfo> extract_information(DeviceNFC &device, std::vector<Applicati
 
     for (size_t i = 0; i < list.size(); i++) {
         Application &app = list[i];
-        APDU res = ApplicationHelper::select_application(device.pnd, app);
+        APDU res = device.select_application(app);
         std::cout << std::endl;
 
         infos[i].parse_response(app, res);
@@ -26,14 +26,13 @@ std::vector<CCInfo> extract_information(DeviceNFC &device, std::vector<Applicati
         //infos[i].extractLogEntries(device);
     }
 
-
     return infos;
 }
 
 void get_processing_options(DeviceNFC &device, std::vector<Application> &list) {
     // Select application is required to get PDOL and call GPO, can't use GPO without it
     for (Application &app : list) {
-        ApplicationHelper::select_application(device.pnd, app);
+        device.select_application(app);
     }
 
     APDU gpo = {0, {0}};
@@ -65,8 +64,7 @@ void get_processing_options(DeviceNFC &device, std::vector<Application> &list) {
         0x80, 0xA8, 0x00, 0x00, 0x12, // GET PROCESSING OPTIONS
 
         0x83, 0x10, // Data required in PDOL
-        //0x79, 0x00, 0x40, 0x80, // Terminal transaction qualifier
-        0b01101000, 0x00, 0x40, 0x00, // Terminal transaction qualifier
+        0x79, 0x00, 0x40, 0x80, // Terminal transaction qualifier
         0x00, 0x00, 0x00, 0x10, 0x00, 0x00, // Amount
         0xE0, 0x11, 0x01, 0x02, // Unpredictable number
         0x06, 0x43, // Trasaction currency code
@@ -86,7 +84,7 @@ void get_processing_options(DeviceNFC &device, std::vector<Application> &list) {
         return;
     }
 
-    APDU afl;
+    APDU afl = {0, {0}};
     afl.size = parse_TLV(afl.data, gpo.data, i);
 
     std::cout << std::endl;
