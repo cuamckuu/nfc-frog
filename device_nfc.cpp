@@ -92,7 +92,34 @@ APDU DeviceNFC::select_application(Application &app) {
 }
 
 std::vector<Application> DeviceNFC::load_applications_list() {
-    return ApplicationHelper::getAll(pnd);
+    std::vector<Application> list;
+
+    APDU res = execute_command(Command::SELECT_PPSE, sizeof(Command::SELECT_PPSE), "SELECT PPSE");
+
+    if (res.size == 0) {
+        return list;
+    }
+
+    size_t i = 0;
+    while (i < res.size - 2) {
+        if (res.data[i] == 0x61) { // Application template
+            byte_t app_len = res.data[++i];
+            Application app;
+
+            for (size_t j = i; j < i + app_len; j++) {
+                if (res.data[j] == 0x4F) {
+                    parse_TLV(app.aid, res.data, j);
+                } else if (res.data[j] == 0x87) {
+                    parse_TLV(&app.priority, res.data, j);
+                }
+            }
+            list.push_back(app);
+            i += app_len;
+        }
+        i++;
+    }
+
+    return list;
 }
 
 DeviceNFC::~DeviceNFC() {
