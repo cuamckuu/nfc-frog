@@ -9,7 +9,6 @@ extern "C" {
 #include <thread>
 
 #include "headers/device_nfc.h"
-#include "headers/applicationhelper.h"
 #include "headers/ccinfo.h"
 #include "headers/tools.h"
 

@@ -7,7 +7,6 @@ CXXFLAGS+= -std=c++11 -W -Wall -pedantic
 LIBS= -lnfc
 
 SRC= main.cpp \
-	 applicationhelper.cpp \
 	 ccinfo.cpp \
 	 tools.cpp \
 	 device_nfc.cpp

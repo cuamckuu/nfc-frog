@@ -3,7 +3,6 @@
 
 #include <map>
 
-#include "applicationhelper.h"
 #include "device_nfc.h"
 
 class CCInfo {

@@ -13,10 +13,9 @@ extern "C" {
     #endif // PN32X_TRANSCEIVE
 }
 
-#include <list>
+#include <vector>
 
 #include "tools.h"
-#include "applicationhelper.h"
 
 class DeviceNFC {
   public:
