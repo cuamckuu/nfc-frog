@@ -34,22 +34,8 @@ const byte_t Command::GET_DATA_LOG_FORMAT[7] = {
   CLASS Tools
 */
 
-void Tools::print(char const *str, std::string const &label) {
-    std::cout << label << ": " << str << std::endl;
-}
-
 void Tools::printHex(APDU const &apdu, std::string const &label) {
     printHex(apdu.data, apdu.size, label);
-}
-
-void Tools::printChar(byte_t const *str, size_t size, std::string const &label) {
-    if (label.size() > 0)
-        std::cout << label << ": ";
-
-    for (size_t i = 0; i < size; ++i)
-        std::cout << (isprint((char)str[i]) ? (char)str[i] : '.');
-
-    std::cout << std::endl;
 }
 
 void Tools::printHex(byte_t const *str, size_t size, std::string const &label) {
