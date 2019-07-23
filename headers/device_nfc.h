@@ -28,7 +28,10 @@ class DeviceNFC {
 
     std::vector<Application> load_applications_list();
     APDU execute_command(byte_t const *command, size_t size, char const *name);
+
+  public: // Command Wrappers
     APDU select_application(Application &app);
+    APDU read_record(byte_t sfi, byte_t record_number);
 
   private:
     byte_t abtRx[MAX_FRAME_LEN] = {};

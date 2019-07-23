@@ -1,5 +1,5 @@
 #include <iostream>
-#include <list>
+#include <sstream>
 #include <cstring>
 
 #include "headers/device_nfc.h"
@@ -72,23 +72,41 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
 
 APDU DeviceNFC::select_application(Application &app) {
     // Prepare the SELECT command
-    byte_t select_app[256] = {0};
+    byte_t command[256] = {0};
     byte_t size = sizeof(Command::SELECT_APP_HEADER);
 
     // SELECT by name first or only occurence
-    memcpy(select_app, Command::SELECT_APP_HEADER, size);
+    memcpy(command, Command::SELECT_APP_HEADER, size);
 
     // Lc (Length) block
-    select_app[size++] = sizeof(app.aid);
+    command[size++] = sizeof(app.aid);
 
     // AID
-    memcpy(select_app + size, app.aid, sizeof(app.aid));
+    memcpy(command + size, app.aid, sizeof(app.aid));
     size += sizeof(app.aid);
 
     // Increment size to have extra 0x00 in the end
     size += 1;
 
-    return execute_command(select_app, size, "SELECT APP");
+    return execute_command(command, size, "SELECT APP");
+}
+
+APDU DeviceNFC::read_record(byte_t sfi, byte_t record_number) {
+    APDU command = {0, {0}};
+
+    // Copy command template
+    command.size = sizeof(Command::READ_RECORD);
+    memcpy(command.data, Command::READ_RECORD, command.size);
+
+    // Set params
+    command.data[4] = record_number; // Param 1: record number
+    command.data[5] = (sfi << 3) | (1 << 2); // Param 2: SFI
+
+    // Log string to be printed
+    std::stringstream ss;
+    ss << "READ RECORD from SFI" << (int)sfi << " record" << (int)record_number;
+
+    return execute_command(command.data, command.size, ss.str().c_str());
 }
 
 std::vector<Application> DeviceNFC::load_applications_list() {
