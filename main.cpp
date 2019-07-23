@@ -21,11 +21,29 @@ std::vector<CCInfo> extract_information(DeviceNFC &device, std::vector<Applicati
         std::cout << std::endl;
 
         infos[i].parse_response(app, res);
-        infos[i].read_record(device);
         //infos[i].extractLogEntries(device);
     }
 
     return infos;
+}
+
+void brute_device_records(DeviceNFC &device, std::vector<Application> &list) {
+    // Select application is required before READ RECORD calls
+    for (size_t i = 0; i < list.size(); i++) {
+        Application &app = list[i];
+        APDU res = device.select_application(app);
+        std::cout << std::endl;
+    }
+
+    for (size_t sfi = CCInfo::_FROM_SFI; sfi <= CCInfo::_TO_SFI; ++sfi) {
+        for (size_t record = CCInfo::_FROM_RECORD; record <= CCInfo::_TO_RECORD; ++record) {
+            APDU res = device.read_record(sfi, record);
+
+            if (res.size >= 2 && res.data[1] == 0x6A && res.data[2] == 0x82) {
+                break; // FileNotExist at this SFI
+            }
+        }
+    }
 }
 
 void get_processing_options(DeviceNFC &device, std::vector<Application> &list) {
@@ -138,7 +156,8 @@ int main(int argc, char *argv[]) {
         std::vector<Application> list = device.load_applications_list();
 
         if (mode == Mode::fast || mode == Mode::full) {
-            std::vector<CCInfo> infos = extract_information(device, list);
+            //std::vector<CCInfo> infos = extract_information(device, list);
+            brute_device_records(device, list);
         } else if (mode == Mode::GPO) {
             get_processing_options(device, list);
         }
