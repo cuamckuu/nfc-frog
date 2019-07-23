@@ -12,7 +12,6 @@ class CCInfo {
 
   public:
     int parse_response(Application const &, APDU const &);
-    int read_record(DeviceNFC &device);
     int extractLogEntries(DeviceNFC &device);
 
     void printPaylog() const;
@@ -47,6 +46,7 @@ class CCInfo {
     static const std::map<unsigned short, std::string> _currencyCodes;
     static const std::map<unsigned short, std::string> _countryCodes;
 
+  public:
     static byte_t _FROM_SFI;
     static byte_t _TO_SFI; // 10 is max by spec
     //static byte_t _TO_SFI; // Max SFI is 2^5 - 1

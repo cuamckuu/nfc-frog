@@ -81,48 +81,6 @@ int CCInfo::extractLogEntries(DeviceNFC &device) {
     return 0;
 }
 
-int CCInfo::read_record(DeviceNFC &device) {
-    APDU readRecord = {0, {0}};
-    readRecord.size = sizeof(Command::READ_RECORD);
-    memcpy(readRecord.data, Command::READ_RECORD, readRecord.size);
-
-    APDU res = {0, {0}};
-    for (size_t sfi = _FROM_SFI; sfi <= _TO_SFI; ++sfi) {
-        // Param 2: First 5 bits = SFI.
-        //          Three other bits must be set to 1|0|0 (P1 is a record
-        //          number)
-        readRecord.data[5] = (sfi << 3) | (1 << 2);
-
-        for (size_t record = _FROM_RECORD; record <= _TO_RECORD; ++record) {
-
-            readRecord.data[4] = record; // Param 1: record number
-
-            std::stringstream ss;
-            ss << "READ RECORD from SFI" << (int)sfi << " record" << (int)record;
-            res = device.execute_command(readRecord.data, readRecord.size, ss.str().c_str());
-
-            if (res.size >= 2 && res.data[1] == 0x6A && res.data[2] == 0x82) { // File Place error
-                break;
-            }
-
-            for (size_t i = 0; i < res.size; ++i) {
-                if (res.data[i] == 0x57) { // Track 2 equivalent data
-                    _track2EquivalentData.size = parse_TLV(_track2EquivalentData.data, res.data, i);
-
-                } else if (i + 1 < res.size && res.data[i] == 0x5F && res.data[i + 1] == 0x20) { // Cardholder name
-                    parse_TLV(_cardholderName, res.data, ++i);
-
-                } else if (i + 1 < res.size  && res.data[i] == 0x9F && res.data[i + 1] == 0x1F) { // Track 1 discretionary data
-                    _track1DiscretionaryData.size = parse_TLV(_track1DiscretionaryData.data, res.data, ++i);
-                }
-            }
-        }
-
-    }
-
-    return 0;
-}
-
 void CCInfo::printPaylog() const {
 
     std::cout << "-----------------" << std::endl;
