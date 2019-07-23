@@ -20,16 +20,6 @@ int pn53x_transceive(struct nfc_device *pnd, const uint8_t *pbtTx,
 byte_t ApplicationHelper::abtRx[MAX_FRAME_LEN];
 int ApplicationHelper::szRx;
 
-bool ApplicationHelper::is_status_ok() {
-    if (szRx < 2)
-        return false;
-
-    if (abtRx[szRx - 2] == 0x90 && abtRx[szRx - 1] == 0)
-        return true;
-
-    return false;
-}
-
 std::vector<Application> ApplicationHelper::getAll(nfc_device *pnd) {
     std::vector<Application> list;
 
