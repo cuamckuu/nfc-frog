@@ -71,12 +71,18 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
 }
 
 APDU DeviceNFC::select_application(Application &app) {
+    byte_t const SELECT_APP_HEADER[] = {
+        0x40, 0x01, // Pn532 InDataExchange
+        0x00, 0xA4, // SELECT application
+        0x04, 0x00 // P1:By name, P2:_
+    };
+
     // Prepare the SELECT command
     byte_t command[256] = {0};
-    byte_t size = sizeof(Command::SELECT_APP_HEADER);
+    byte_t size = sizeof(SELECT_APP_HEADER);
 
     // SELECT by name first or only occurence
-    memcpy(command, Command::SELECT_APP_HEADER, size);
+    memcpy(command, SELECT_APP_HEADER, size);
 
     // Lc (Length) block
     command[size++] = sizeof(app.aid);
@@ -92,28 +98,37 @@ APDU DeviceNFC::select_application(Application &app) {
 }
 
 APDU DeviceNFC::read_record(byte_t sfi, byte_t record_number) {
-    APDU command = {0, {0}};
+    byte_t const sfi_param = (sfi << 3) | (1 << 2);
 
-    // Copy command template
-    command.size = sizeof(Command::READ_RECORD);
-    memcpy(command.data, Command::READ_RECORD, command.size);
-
-    // Set params
-    command.data[4] = record_number; // Param 1: record number
-    command.data[5] = (sfi << 3) | (1 << 2); // Param 2: SFI
+    byte_t const command[] = {
+        0x40, 0x01, // Pn532 InDataExchange
+        0x00, 0xB2, // READ RECORD
+        record_number, sfi_param, // P1:record_number and P2:SFI
+        0x00 // Le
+    };
 
     // Log string to be printed
     std::stringstream ss;
     ss << "READ RECORD from SFI" << (int)sfi << " record" << (int)record_number;
 
-    return execute_command(command.data, command.size, ss.str().c_str());
+    return execute_command(command, sizeof(command), ss.str().c_str());
 }
 
 std::vector<Application> DeviceNFC::load_applications_list() {
+    byte_t const command[] = {
+        0x40, 0x01, // Pn532 InDataExchange
+        0x00, 0xA4, // SELECT ppse
+        0x04, 0x00, // P1:By name, P2:_
+
+        0x0e, // Lc: Data length
+        0x32, 0x50, 0x41, 0x59, 0x2e, 0x53, 0x59, // Data string:
+        0x53, 0x2e, 0x44, 0x44, 0x46, 0x30, 0x31, // 2PAY.SYS.DDF01 (PPSE)
+        0x00 // Le
+    };
+
+    APDU res = execute_command(command, sizeof(command), "SELECT PPSE");
+
     std::vector<Application> list;
-
-    APDU res = execute_command(Command::SELECT_PPSE, sizeof(Command::SELECT_PPSE), "SELECT PPSE");
-
     if (res.size == 0) {
         return list;
     }

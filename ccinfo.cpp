@@ -54,8 +54,15 @@ int CCInfo::parse_response(Application const &app, APDU const &appResponse) {
 }
 
 int CCInfo::extractLogEntries(DeviceNFC &device) {
+    byte_t const command[] = {
+        0x40, 0x01, // Pn532 InDataExchange
+        0x80, 0xCA, // GET DATA command
+        0x9F, 0x4F, // P1P2: 9F4F - LogFormat
+        0x00 // Le
+    };
+
     // First we get the log format
-    _logFormat = device.execute_command(Command::GET_DATA_LOG_FORMAT, sizeof(Command::GET_DATA_LOG_FORMAT), "GET DATA LOG FORMAT");
+    _logFormat = device.execute_command(command, sizeof(command), "GET DATA LOG FORMAT");
 
     if (_logFormat.size == 0) {
         std::cerr << "Unable to get the log format. Reading aborted." << std::endl;
