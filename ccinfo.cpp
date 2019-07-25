@@ -6,8 +6,7 @@
 #include "headers/tools.h"
 
 byte_t CCInfo::_FROM_SFI = 1;
-byte_t CCInfo::_TO_SFI = 10; // Fast mode, 10 is max by spec
-//byte_t CCInfo::_TO_SFI = 31; // Max SFI is 2^5 - 1
+byte_t CCInfo::_TO_SFI = 31; // Max SFI is 2^5 - 1
 
 byte_t CCInfo::_FROM_RECORD = 1;
 byte_t CCInfo::_TO_RECORD = 16; // Fast mode, usual is's enought
