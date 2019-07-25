@@ -33,17 +33,6 @@ struct APDU {
     byte_t data[MAX_FRAME_LEN];
 };
 
-// Command list
-class Command {
-  public:
-    static const byte_t START_14443A[3];
-    static const byte_t SELECT_PPSE[22];
-    static const byte_t SELECT_APP_HEADER[6];
-    static const byte_t GPO_HEADER[6];
-    static const byte_t READ_RECORD[7];
-    static const byte_t GET_DATA_LOG_FORMAT[7];
-};
-
 // Misc tools for printing
 class Tools {
   public:
