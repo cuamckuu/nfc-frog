@@ -1,5 +1,5 @@
-#ifndef __TOOLS_HH__
-#define __TOOLS_HH__
+#ifndef TOOLS_H
+#define TOOLS_H
 
 #include <cstdio>
 #include <iomanip>
@@ -9,8 +9,6 @@
 
 #include <nfc/nfc-types.h>
 
-//#define DEBUG
-
 #define MAX_FRAME_LEN 300
 
 // Macro to print unsigned chars in hexadecimal
@@ -19,14 +17,6 @@
              << (unsigned int)c << std::dec
 
 typedef unsigned char byte_t;
-
-extern nfc_device *pnd;
-
-struct Application {
-    byte_t priority = 0;
-    byte_t aid[7] = {};
-    char name[128] = {};
-};
 
 struct APDU {
     size_t size;
@@ -42,4 +32,4 @@ byte_t parse_TLV(DestT *dest, SrcT *src, size_t &idx) {
     return len;
 }
 
-#endif // __TOOLS_HH__
+#endif // TOOLS_H

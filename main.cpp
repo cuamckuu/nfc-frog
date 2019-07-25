@@ -8,8 +8,9 @@ extern "C" {
 #include <chrono>
 #include <thread>
 
-#include "headers/device_nfc.h"
+#include "headers/application.h"
 #include "headers/ccinfo.h"
+#include "headers/device_nfc.h"
 #include "headers/tools.h"
 
 std::vector<CCInfo> extract_information(DeviceNFC &device, std::vector<Application> &list) {

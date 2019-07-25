@@ -15,17 +15,18 @@ extern "C" {
 
 #include <vector>
 
+#include "application.h"
 #include "tools.h"
 
 class DeviceNFC {
   public:
     DeviceNFC();
-    bool pool_target();
+    ~DeviceNFC();
     std::string get_name();
     void print_target_info();
 
-    ~DeviceNFC();
-
+  public:
+    bool pool_target();
     std::vector<Application> load_applications_list();
     APDU execute_command(byte_t const *command, size_t size, char const *name);
 
