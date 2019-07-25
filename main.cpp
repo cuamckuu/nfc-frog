@@ -104,8 +104,11 @@ void get_processing_options(DeviceNFC &device, std::vector<Application> &list) {
     APDU afl = {0, {0}};
     afl.size = parse_TLV(afl.data, gpo.data, i);
 
+    std::cout << std::endl << "AFL data: ";
+    for (size_t i = 0; i < afl.size; ++i) {
+        std::cout << HEX(afl.data[i]) << " ";
+    }
     std::cout << std::endl;
-    Tools::printHex(afl, "AFL data");
 
     for (size_t j = 0; j < afl.size; j+=4) {
         byte_t sfi = afl.data[j] >> 3;

@@ -64,7 +64,11 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
     // Be careful, ret.data[0] == 0x00, due to libnfc, then real data comes
 
     if (ret.size > 3) {
-        Tools::printHex(ret.data + 1, ret.size - 1, std::string(std::string("Answer from ") + name));
+        std::cout << "Answer from " << name << ": ";
+        for (size_t i = 0; i < ret.size; ++i) {
+            std::cout << HEX(ret.data[i]) << " ";
+        }
+        std::cout << std::endl;
     }
 
     return ret;
