@@ -62,18 +62,9 @@ int CCInfo::extractLogEntries(DeviceNFC &device) {
         return 1;
     }
 
-    byte_t readRecord[sizeof(Command::READ_RECORD)];
-    memcpy(readRecord, Command::READ_RECORD, sizeof(readRecord));
-
-    // Param 2: First 5 bits = SFI.
-    //          Three other bits must be set to 1|0|0 (P1 is a record number)
-    readRecord[5] = (_logSFI << 3) | (1 << 2);
-
     for (size_t i = 0; i < _logCount; ++i) {
-        // Param 1: record number
-        readRecord[4] = i + 1; // Starts from 1 and not 0
+        _logEntries[i] = device.read_record(_logSFI, i+1);
 
-        _logEntries[i] = device.execute_command(readRecord, sizeof(readRecord), "READ RECORD: LOGFILE");
         if (_logEntries[i].size == 0)
             return 1;
     }
