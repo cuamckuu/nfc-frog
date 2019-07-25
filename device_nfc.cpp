@@ -65,7 +65,7 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
 
     if (ret.size > 3) {
         std::cout << "Answer from " << name << ": ";
-        for (size_t i = 0; i < ret.size; ++i) {
+        for (size_t i = 1; i < ret.size; ++i) {
             std::cout << HEX(ret.data[i]) << " ";
         }
         std::cout << std::endl;
@@ -98,7 +98,16 @@ APDU DeviceNFC::select_application(Application &app) {
     // Increment size to have extra 0x00 in the end
     size += 1;
 
-    return execute_command(command, size, "SELECT APP");
+    APDU res = execute_command(command, size, "SELECT APP");
+
+    // Extract PDOL from SELECT response
+    for (size_t i = 0; i+1 < res.size; i++) {
+        if (res.data[i] == 0x9F && res.data[i+1] == 0x38) { // PDOL Tag
+            app.pdol.size = parse_TLV(app.pdol.data, res.data, ++i);
+        }
+    }
+
+    return res;
 }
 
 APDU DeviceNFC::read_record(byte_t sfi, byte_t record_number) {
