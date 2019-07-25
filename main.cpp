@@ -13,21 +13,6 @@ extern "C" {
 #include "headers/device_nfc.h"
 #include "headers/tools.h"
 
-std::vector<CCInfo> extract_information(DeviceNFC &device, std::vector<Application> &list) {
-    std::vector<CCInfo> infos(list.size());
-
-    for (size_t i = 0; i < list.size(); i++) {
-        Application &app = list[i];
-        APDU res = device.select_application(app);
-        std::cout << std::endl;
-
-        infos[i].parse_response(app, res);
-        //infos[i].extractLogEntries(device);
-    }
-
-    return infos;
-}
-
 void brute_device_records(DeviceNFC &device, std::vector<Application> &list) {
     // Select application is required before READ RECORD calls
     for (size_t i = 0; i < list.size(); i++) {
@@ -160,7 +145,6 @@ int main(int argc, char *argv[]) {
         std::vector<Application> list = device.load_applications_list();
 
         if (mode == Mode::fast || mode == Mode::full) {
-            //std::vector<CCInfo> infos = extract_information(device, list);
             brute_device_records(device, list);
         } else if (mode == Mode::GPO) {
             get_processing_options(device, list);
