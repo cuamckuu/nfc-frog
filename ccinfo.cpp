@@ -149,20 +149,6 @@ void CCInfo::set_full_mode() {
 /* The following PDOL values insert a payment in the paylog, be careful when
    using it via getProcessingOptions()
  */
-const std::map<unsigned short, byte_t const *> CCInfo::PDOLValues = {
-    {0x9F59, new byte_t[3]{0xC8, 0x80, 0x00}}, // Terminal Transaction Information
-    {0x9F5A, new byte_t[1]{ 0x00}}, // Terminal transaction Type. 0 = payment, 1 = withdraw
-    {0x9F58, new byte_t[1]{0x01}}, // Merchant Type Indicator
-    {0x9F66, new byte_t[4]{0xB6, 0x20, 0xC0, 0x00}}, // Terminal Transaction Qualifiers
-    {0x9F02, new byte_t[6]{0x00, 0x00, 0x10, 0x00, 0x00, 0x00}}, // amount, authorised
-    {0x9F03, new byte_t[6]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}, // Amount, Other
-    {0x9F1A, new byte_t[2]{0x01, 0x24}}, // Terminal country code
-    {0x5F2A, new byte_t[2]{0x01, 0x24}}, // Transaction currency code
-    {0x95, new byte_t[5]{0x00, 0x00, 0x00, 0x00, 0x00}},             // Terminal Verification Results
-    {0x9A, new byte_t[3]{0x15, 0x01, 0x01}}, // Transaction Date
-    {0x9C, new byte_t[1]{0x00}},             // Transaction Type
-    {0x9F37, new byte_t[4]{0x82, 0x3D, 0xDE, 0x7A}}}; // Unpredictable number
-
 const std::map<unsigned short, std::string> CCInfo::_logFormatTags = {
     {0x9A, "Date"},      {0x9C, "Type"},          {0x9F21, "Time"},
     {0x9F1A, "Country"}, {0x9F27, "Crypto info"}, {0x5F2A, "Currency"},

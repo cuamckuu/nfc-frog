@@ -32,7 +32,6 @@ class CCInfo {
     APDU _logEntries[0x20]; // Maximum 32 entries
 
   private:
-    static const std::map<unsigned short, byte_t const *> PDOLValues;
     static const std::map<unsigned short, std::string> _logFormatTags;
     static const std::map<unsigned short, std::string> _currencyCodes;
     static const std::map<unsigned short, std::string> _countryCodes;
