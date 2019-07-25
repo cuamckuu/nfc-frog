@@ -13,44 +13,10 @@ byte_t CCInfo::_TO_RECORD = 16; // Fast mode, usual is's enought
 //byte_t CCInfo::_TO_RECORD = 255; // Full mode
 
 CCInfo::CCInfo()
-    : _pdol({0, {0}}), _track1DiscretionaryData({0, {0}}),
-      _track2EquivalentData({0, {0}}), _logSFI(0), _logCount(0),
+    : _track1DiscretionaryData({0, {0}}),
+      _track2EquivalentData({0, {0}}),
       _logFormat({0, {0}}), _logEntries({{0, {0}}})
 { }
-
-int CCInfo::parse_response(Application const &app, APDU const &appResponse) {
-    _application = app;
-
-    byte_t const *buff = appResponse.data;
-    size_t size = appResponse.size;
-
-    for (size_t i = 0; i < size; ++i) {
-        if (i + 1 < size && buff[i] == 0x5F && buff[i + 1] == 0x2D) { // Language preference
-            parse_TLV(_languagePreference, buff, ++i);
-
-        } else if (i + 1 < size && buff[i] == 0x9F && buff[i + 1] == 0x38) { // PDOL
-            _pdol.size = parse_TLV(_pdol.data, buff, ++i);
-
-        } else if (i + 1 < size && buff[i] == 0xBF && buff[i + 1] == 0x0C) { // File Control Information
-            i += 2;
-            byte_t len = buff[i++];
-
-            // Extract the LOG ENTRY
-            for (size_t j = 0; j < len; ++j) {
-                if (j + 1 < len && buff[i + j] == 0x9F && buff[i + j + 1] == 0x4D) { // Log Entry
-                    j += 2 + 1; // Size = 2 so we don't save it
-                    _logSFI = buff[i + j++];
-                    _logCount = buff[i + j];
-                }
-            }
-            i += len - 1;
-        } else if (buff[i] == 0x50) { // Card name
-            parse_TLV(_application.name, buff, i);
-        }
-    }
-
-    return 0;
-}
 
 int CCInfo::extractLogEntries(DeviceNFC &device) {
     byte_t const command[] = {
@@ -66,13 +32,6 @@ int CCInfo::extractLogEntries(DeviceNFC &device) {
     if (_logFormat.size == 0) {
         std::cerr << "Unable to get the log format. Reading aborted." << std::endl;
         return 1;
-    }
-
-    for (size_t i = 0; i < _logCount; ++i) {
-        _logEntries[i] = device.read_record(_logSFI, i+1);
-
-        if (_logEntries[i].size == 0)
-            return 1;
     }
 
     return 0;
