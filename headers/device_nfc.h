@@ -18,6 +18,13 @@ extern "C" {
 #include "application.h"
 #include "tools.h"
 
+enum GetDataParam : byte_t {
+    log_format = 0x4F,
+    transaction_counter = 0x36,
+    pin_counter = 0x17,
+    last_online_register = 0x13
+};
+
 class DeviceNFC {
   public:
     DeviceNFC();
@@ -33,6 +40,7 @@ class DeviceNFC {
   public: // Command Wrappers
     APDU select_application(Application &app);
     APDU read_record(byte_t sfi, byte_t record_number);
+    APDU get_data(GetDataParam param2);
 
   private:
     nfc_target nt;

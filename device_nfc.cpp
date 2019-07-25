@@ -78,20 +78,18 @@ APDU DeviceNFC::select_application(Application &app) {
     byte_t const SELECT_APP_HEADER[] = {
         0x40, 0x01, // Pn532 InDataExchange
         0x00, 0xA4, // SELECT application
-        0x04, 0x00  // P1:By name, P2:_
+        0x04, 0x00  // P1:By name, P2:First or only occurence
     };
 
     // Prepare the SELECT command
     byte_t command[256] = {0};
     byte_t size = sizeof(SELECT_APP_HEADER);
 
-    // SELECT by name first or only occurence
+    // Copy command
     memcpy(command, SELECT_APP_HEADER, size);
 
-    // Lc (Length) block
-    command[size++] = sizeof(app.aid);
-
-    // AID
+    // Copy AID
+    command[size++] = sizeof(app.aid); // Lc (Length) block
     memcpy(command + size, app.aid, sizeof(app.aid));
     size += sizeof(app.aid);
 
@@ -180,6 +178,19 @@ std::vector<Application> DeviceNFC::load_applications_list() {
     }
 
     return list;
+}
+
+APDU DeviceNFC::get_data(GetDataParam param2) {
+    // Don't forget to select app before usage
+
+    byte_t const command[] = {
+        0x40, 0x01, // Pn532 InDataExchange
+        0x80, 0xCA, // GET DATA command
+        0x9F, (byte_t)param2, // P2: Look at GetDataParam enum in header
+        0x00 // Le
+    };
+
+    return execute_command(command, sizeof(command), "GET DATA");
 }
 
 DeviceNFC::~DeviceNFC() {
