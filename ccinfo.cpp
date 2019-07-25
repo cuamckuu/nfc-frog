@@ -9,33 +9,13 @@ byte_t CCInfo::_FROM_SFI = 1;
 byte_t CCInfo::_TO_SFI = 31; // Max SFI is 2^5 - 1
 
 byte_t CCInfo::_FROM_RECORD = 1;
-byte_t CCInfo::_TO_RECORD = 16; // Fast mode, usual is's enought
-//byte_t CCInfo::_TO_RECORD = 255; // Full mode
+byte_t CCInfo::_TO_RECORD = 16; // Fast mode, usual is's enought, Max is 255
 
 CCInfo::CCInfo()
     : _track1DiscretionaryData({0, {0}}),
       _track2EquivalentData({0, {0}}),
       _logFormat({0, {0}}), _logEntries({{0, {0}}})
 { }
-
-int CCInfo::extractLogEntries(DeviceNFC &device) {
-    byte_t const command[] = {
-        0x40, 0x01, // Pn532 InDataExchange
-        0x80, 0xCA, // GET DATA command
-        0x9F, 0x4F, // P1P2: 9F4F - LogFormat
-        0x00 // Le
-    };
-
-    // First we get the log format
-    _logFormat = device.execute_command(command, sizeof(command), "GET DATA LOG FORMAT");
-
-    if (_logFormat.size == 0) {
-        std::cerr << "Unable to get the log format. Reading aborted." << std::endl;
-        return 1;
-    }
-
-    return 0;
-}
 
 void CCInfo::printPaylog() const {
 
