@@ -18,7 +18,7 @@ void brute_device_records(DeviceNFC &device, std::vector<Application> &list) {
     for (size_t i = 0; i < list.size(); i++) {
         Application &app = list[i];
         APDU res = device.select_application(app);
-        std::cout << std::endl;
+        std::cerr << std::endl;
     }
 
     for (size_t sfi = CCInfo::_FROM_SFI; sfi <= CCInfo::_TO_SFI; ++sfi) {
@@ -43,35 +43,32 @@ void walk_through_gpo_files(DeviceNFC &device, Application &app) {
     }
 
     if (i >= gpo.size) {
-        std::cout << "Can't get AFL" << std::endl;
+        std::cerr << "Can't get AFL" << std::endl;
         return;
     }
 
     APDU afl = {0, {0}};
     afl.size = parse_TLV(afl.data, gpo.data, i);
 
-    std::cout << "\nGPO Results: \n";
+    std::cerr << "\nGPO Results: \n";
     for (size_t j = 0; j < afl.size; j+=4) {
         byte_t sfi = afl.data[j] >> 3;
         byte_t from_sfi = afl.data[j+1];
         byte_t to_sfi = afl.data[j+2];
 
-        std::cout << "SFI " << HEX(sfi);
-        std::cout << " with records from " << HEX(from_sfi);
-        std::cout << " to " << HEX(to_sfi) << std::endl;
+        std::cerr << "SFI " << HEX(sfi);
+        std::cerr << " with records from " << HEX(from_sfi);
+        std::cerr << " to " << HEX(to_sfi) << std::endl;
     }
 }
 
 enum Mode { fast, full, GPO, UNKNOWN };
 
 int main(int argc, char *argv[]) {
-    std::ios_base::sync_with_stdio(false);
-    std::cin.tie(0);
-
     Mode mode = Mode::UNKNOWN;
 
     if (argc == 1) {
-        std::cout << "[Info] Use mode 'fast', 'full' or 'GPO'" << std::endl;
+        std::cerr << "[Info] Use mode 'fast', 'full' or 'GPO'" << std::endl;
         return 0;
     }
 
@@ -90,10 +87,10 @@ int main(int argc, char *argv[]) {
 
     try {
         DeviceNFC device;
-        std::cout << "NFC reader: " << device.get_name() << " opened.\n";
+        std::cerr << "NFC reader: " << device.get_name() << " opened.\n";
 
         while (!device.pool_target()) {
-            std::cout << "Searching..." << std::endl;
+            std::cerr << "Searching..." << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
 

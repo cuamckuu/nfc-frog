@@ -66,7 +66,7 @@ void DeviceNFC::print_target_info() {
     char *info;
     str_nfc_target(&info, &nt, true);
 
-    std::cout << info;
+    std::cerr << info;
     nfc_free(info);
 }
 
@@ -80,7 +80,7 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
     // Be careful, ret.data[0] == 0x00, due to libnfc, then real data comes
 
     if (ret.size > 3) {
-        std::cout << "Answer from " << name << ": ";
+        std::cerr << "Answer from " << name << ": ";
         for (size_t i = 1; i < ret.size; ++i) {
             std::cout << HEX(ret.data[i]) << " ";
         }

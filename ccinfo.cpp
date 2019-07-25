@@ -19,9 +19,9 @@ CCInfo::CCInfo()
 
 void CCInfo::printPaylog() const {
 
-    std::cout << "-----------------" << std::endl;
-    std::cout << "-- Paylog --" << std::endl;
-    std::cout << "-----------------" << std::endl;
+    std::cerr << "-----------------" << std::endl;
+    std::cerr << "-- Paylog --" << std::endl;
+    std::cerr << "-----------------" << std::endl;
     // Data are not formatted. We must read the logFormat to parse each entry
     byte_t const *format = _logFormat.data;
     size_t size = _logFormat.size;
@@ -30,53 +30,53 @@ void CCInfo::printPaylog() const {
         if (entry.size == 0)
             break;
 
-        std::cout << index++ << ": ";
+        std::cerr << index++ << ": ";
         size_t e = 0;
         // Read the log format to deduce what is in the log entry
         for (size_t i = 0; i < size; ++i) {
             if (format[i] == 0x9A) { // Date
                 size_t len = format[++i];
-                std::cout << _logFormatTags.at(0x9A) << ": ";
+                std::cerr << _logFormatTags.at(0x9A) << ": ";
                 for (size_t j = 0; j < len; ++j) {
-                    std::cout << (j == 0 ? "" : "/") << (j == 0 ? "20" : "")
+                    std::cerr << (j == 0 ? "" : "/") << (j == 0 ? "20" : "")
                               << HEX(entry.data[e++]);
                 }
-                std::cout << "; ";
+                std::cerr << "; ";
             } else if (format[i] == 0x9C) { // Type
                 size_t len = format[++i];
                 (void)len;
-                std::cout << _logFormatTags.at(0x9C) << ": "
+                std::cerr << _logFormatTags.at(0x9C) << ": "
                           << (entry.data[e++] ? "Withdrawal" : "Payment")
                           << "; ";
             } else if (i + 1 < size) {
                 if (format[i] == 0x9F && format[i + 1] == 0x21) { // Time
                     i += 2;
                     size_t len = format[i];
-                    std::cout << _logFormatTags.at(0x9F21) << ": ";
+                    std::cerr << _logFormatTags.at(0x9F21) << ": ";
                     for (size_t j = 0; j < len; ++j)
-                        std::cout << (j == 0 ? "" : ":")
+                        std::cerr << (j == 0 ? "" : ":")
                                   << HEX(entry.data[e++]);
-                    std::cout << "; ";
+                    std::cerr << "; ";
                 } else if (format[i] == 0x5F && format[i + 1] == 0x2A) { // Currency
                     i += 2;
                     size_t len = format[i];
-                    std::cout << _logFormatTags.at(0x5F2A) << ": ";
+                    std::cerr << _logFormatTags.at(0x5F2A) << ": ";
                     unsigned short value =
                         entry.data[e] << 8 | entry.data[e + 1];
                     // If the code is unknown, we print it. Otherwise we print
                     // the 3-char equivalent
                     if (_currencyCodes.find(value) == _currencyCodes.end()) {
                         for (size_t j = 0; j < len; ++j)
-                            std::cout << HEX(entry.data[e++]);
+                            std::cerr << HEX(entry.data[e++]);
                     } else {
-                        std::cout << _currencyCodes.at(value);
+                        std::cerr << _currencyCodes.at(value);
                         e += 2;
                     }
-                    std::cout << "; ";
+                    std::cerr << "; ";
                 } else if (format[i] == 0x9F && format[i + 1] == 0x02) { // Amount
                     i += 2;
                     size_t len = format[i]; // Len should always be 6
-                    std::cout << _logFormatTags.at(0x9F02) << ": ";
+                    std::cerr << _logFormatTags.at(0x9F02) << ": ";
                     // First 4 bytes = value without comma
                     // 5th byte - value after the comma
                     // 6th byte = dk what it is
@@ -89,55 +89,55 @@ void CCInfo::printPaylog() const {
                             continue;
                         } else
                             flagZero = false;
-                        std::cout << HEX(entry.data[e++]);
+                        std::cerr << HEX(entry.data[e++]);
                         if (j == 4)
-                            std::cout << ".";
+                            std::cerr << ".";
                     }
-                    std::cout << "; ";
+                    std::cerr << "; ";
                 } else if (format[i] == 0x9F && format[i + 1] == 0x4E) { // Merchant
                     i += 2;
                     size_t len = format[i];
-                    std::cout << _logFormatTags.at(0x9F4E) << ": ";
+                    std::cerr << _logFormatTags.at(0x9F4E) << ": ";
                     for (size_t j = 0; j < len; ++j)
-                        std::cout << (char)entry.data[e++];
-                    std::cout << "; ";
+                        std::cerr << (char)entry.data[e++];
+                    std::cerr << "; ";
                 } else if (format[i] == 0x9F &&
                            format[i + 1] == 0x36) { // Counter
                     i += 2;
                     size_t len = format[i];
-                    std::cout << _logFormatTags.at(0x9F36) << ": ";
+                    std::cerr << _logFormatTags.at(0x9F36) << ": ";
                     for (size_t j = 0; j < len; ++j)
-                        std::cout << HEX(entry.data[e++]);
-                    std::cout << "; ";
+                        std::cerr << HEX(entry.data[e++]);
+                    std::cerr << "; ";
                 } else if (format[i] == 0x9F &&
                            format[i + 1] == 0x1A) { // Terminal country code
                     i += 2;
                     size_t len = format[i];
-                    std::cout << _logFormatTags.at(0x9F1A) << ": ";
+                    std::cerr << _logFormatTags.at(0x9F1A) << ": ";
                     unsigned short value =
                         entry.data[e] << 8 | entry.data[e + 1];
                     // If the code is unknown, we print it. Otherwise we print
                     // the 3-char equivalent
                     if (_countryCodes.find(value) == _countryCodes.end()) {
                         for (size_t j = 0; j < len; ++j)
-                            std::cout << HEX(entry.data[e++]);
+                            std::cerr << HEX(entry.data[e++]);
                     } else {
-                        std::cout << _countryCodes.at(value);
+                        std::cerr << _countryCodes.at(value);
                         e += 2;
                     }
-                    std::cout << "; ";
+                    std::cerr << "; ";
                 } else if (format[i] == 0x9F &&
                            format[i + 1] == 0x27) { // Crypto info data
                     i += 2;
                     size_t len = format[i];
-                    std::cout << _logFormatTags.at(0x9F27) << ": ";
+                    std::cerr << _logFormatTags.at(0x9F27) << ": ";
                     for (size_t j = 0; j < len; ++j)
-                        std::cout << HEX(entry.data[e++]);
-                    std::cout << "; ";
+                        std::cerr << HEX(entry.data[e++]);
+                    std::cerr << "; ";
                 }
             }
         }
-        std::cout << std::endl;
+        std::cerr << std::endl;
     }
 }
 
