@@ -32,50 +32,27 @@ void brute_device_records(DeviceNFC &device, std::vector<Application> &list) {
     }
 }
 
-void get_processing_options(DeviceNFC &device, std::vector<Application> &list) {
+void get_processing_options(DeviceNFC &device, Application &app) {
     // Select application is required to get PDOL and call GPO, can't use GPO without it
-    for (Application &app : list) {
-        device.select_application(app);
-    }
 
-    APDU gpo = {0, {0}};
-    byte_t select_app[256] = {0};
-
-    byte_t size = 0;
-
-    /*
-    // MIR and MasterCard GPO
-    for (byte_t len = 0; len <= 32; len++) {
-        byte_t lc = len + 0x02;
-        byte_t command[] = { 0x40, 0x01, 0x80, 0xA8, 0x00, 0x00, lc, 0x83, len};
-        size = sizeof(command) + len + 1;
-        memcpy(select_app, command, size);
-
-        APDU res = device.execute_command(select_app, size, "GET PROCESSING OPTIONS");
-
-        byte_t status[2] = {res.data[res.size-2], res.data[res.size-1]};
-        if (status[0] == 0x90 && status[1] == 0x00) {
-            gpo = res;
-            break;
-        }
-    }*/
-
-
-    /// Visa card GPO
-    byte_t command[] = {
+    byte_t gpo_command_template[] = {
         0x40, 0x01, // PN532 Specific
-        0x80, 0xA8, 0x00, 0x00, 0x12, // GET PROCESSING OPTIONS
-
-        0x83, 0x10, // Data required in PDOL
-        0x79, 0x00, 0x40, 0x80, // Terminal transaction qualifier
-        0x00, 0x00, 0x00, 0x10, 0x00, 0x00, // Amount
-        0xE0, 0x11, 0x01, 0x02, // Unpredictable number
-        0x06, 0x43, // Trasaction currency code
-
-        0x00 // Le
+        0x80, 0xA8, 0x00, 0x00, // GET PROCESSING OPTIONS
     };
 
-    gpo = device.execute_command(command, sizeof(command), "GET PROCESSING OPTIONS");
+    byte_t command[256] = {0};
+    byte_t size = sizeof(gpo_command_template);
+
+    std::memcpy(command, gpo_command_template, size);
+
+    APDU data = device.get_PDOL_related_data(app.pdol);
+    command[size++] = 0x02 + data.size;
+    command[size++] = 0x83;
+    command[size++] = data.size;
+    std::memcpy(command+size, data.data, data.size);
+    size += data.size + 1;
+
+    APDU gpo = device.execute_command(command, size, "GET PROCESSING OPTIONS");
 
     size_t i = 0;
     while (i < gpo.size && gpo.data[i] != 0x94) {
@@ -89,22 +66,17 @@ void get_processing_options(DeviceNFC &device, std::vector<Application> &list) {
 
     APDU afl = {0, {0}};
     afl.size = parse_TLV(afl.data, gpo.data, i);
-
-    std::cout << std::endl << "AFL data: ";
-    for (size_t i = 0; i < afl.size; ++i) {
-        std::cout << HEX(afl.data[i]) << " ";
-    }
-    std::cout << std::endl;
+    std::cout << "\nGPO Results: \n";
 
     for (size_t j = 0; j < afl.size; j+=4) {
         byte_t sfi = afl.data[j] >> 3;
         byte_t from_sfi = afl.data[j+1];
         byte_t to_sfi = afl.data[j+2];
-        std::cout << "SFI: " << HEX(sfi);
-        std::cout << " FROM: " << HEX(from_sfi);
-        std::cout << " TO: " << HEX(to_sfi) << std::endl;
-    }
 
+        std::cout << "SFI " << HEX(sfi);
+        std::cout << " with records from " << HEX(from_sfi);
+        std::cout << " to " << HEX(to_sfi) << std::endl;
+    }
 }
 
 enum Mode { fast, full, GPO, UNKNOWN };
@@ -147,12 +119,15 @@ int main(int argc, char *argv[]) {
         if (mode == Mode::fast || mode == Mode::full) {
             brute_device_records(device, list);
         } else if (mode == Mode::GPO) {
-            get_processing_options(device, list);
+            Application app = list[0];
+            device.select_application(app);
+            get_processing_options(device, app);
         }
 
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
         return 1;
     }
+
     return 0;
 }
