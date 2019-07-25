@@ -5,6 +5,22 @@
 #include "headers/device_nfc.h"
 
 nfc_context *DeviceNFC::context = nullptr;
+std::map<unsigned short, byte_t const *> DeviceNFC::PDOLValues = {
+    {0x9F59, new byte_t[3]{0xC8, 0x80, 0x00}}, // Terminal Transaction Information
+    {0x9F5A, new byte_t[1]{0x00}}, // Terminal transaction Type. 0 = payment, 1 = withdraw
+    {0x9F58, new byte_t[1]{0x01}}, // Merchant Type Indicator
+    {0x9F66, new byte_t[4]{0x79, 0x00, 0x40, 0x80}}, // Terminal Transaction Qualifiers
+    {0x9F02, new byte_t[6]{0x00, 0x00, 0x00, 0x10, 0x00, 0x00}}, // amount, authorised
+    {0x9F03, new byte_t[6]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}, // Amount, Other
+    {0x9F1A, new byte_t[2]{0x01, 0x24}}, // Terminal country code
+    {0x5F2A, new byte_t[2]{0x01, 0x24}}, // Transaction currency code
+    {0x95,   new byte_t[5]{0x00, 0x00, 0x00, 0x00, 0x00}}, // Terminal Verification Results
+    {0x9A,   new byte_t[3]{0x19, 0x01, 0x01}}, // Transaction Date
+    {0x9C,   new byte_t[1]{0x00}},             // Transaction Type
+    {0x98,   new byte_t[20]{0}},             // Transaction Cert
+    {0x9F37, new byte_t[4]{0x82, 0x3D, 0xDE, 0x7A}} // Unpredictable number
+};
+
 
 DeviceNFC::DeviceNFC() {
     nfc_init(&context);
@@ -191,6 +207,41 @@ APDU DeviceNFC::get_data(GetDataParam param2) {
     };
 
     return execute_command(command, sizeof(command), "GET DATA");
+}
+
+APDU DeviceNFC::get_PDOL_related_data(APDU pdol) {
+    APDU res = {0, {0}};
+
+    for (size_t i = 0; i < pdol.size; i++) {
+        unsigned short tag = pdol.data[i];
+
+        if (PDOLValues.find(tag) != PDOLValues.end()) {
+            // Tag with length 1 found
+            byte_t len = pdol.data[++i];
+            std::memcpy(res.data+res.size, PDOLValues[tag], len);
+            res.size += len;
+            continue;
+        }
+
+        // Tag with length 1 not found, construct new tag
+        tag = tag << 8 | pdol.data[++i];
+
+        if (PDOLValues.find(tag) != PDOLValues.end()) {
+            // Tag with length 2 found
+            byte_t len = pdol.data[++i];
+            byte_t const *dummy_data = PDOLValues[tag];
+            std::memcpy(res.data+res.size, dummy_data, len);
+            res.size += len;
+            continue;
+        }
+
+        // Unknown tag, fill data with zeros
+        byte_t len = pdol.data[++i];
+        std::memset(res.data+res.size, 0, len);
+        res.size += len;
+    }
+
+    return res;
 }
 
 DeviceNFC::~DeviceNFC() {

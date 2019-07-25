@@ -14,6 +14,7 @@ extern "C" {
 }
 
 #include <vector>
+#include <map>
 
 #include "application.h"
 #include "tools.h"
@@ -36,6 +37,7 @@ class DeviceNFC {
     bool pool_target();
     std::vector<Application> load_applications_list();
     APDU execute_command(byte_t const *command, size_t size, char const *name);
+    APDU get_PDOL_related_data(APDU pdol);
 
   public: // Command Wrappers
     APDU select_application(Application &app);
@@ -46,6 +48,8 @@ class DeviceNFC {
     nfc_target nt;
     nfc_device *pnd = nullptr;
     static nfc_context *context;
+
+    static std::map<unsigned short, byte_t const *> PDOLValues;
 };
 
 
