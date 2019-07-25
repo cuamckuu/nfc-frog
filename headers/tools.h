@@ -33,13 +33,6 @@ struct APDU {
     byte_t data[MAX_FRAME_LEN];
 };
 
-// Misc tools for printing
-class Tools {
-  public:
-    static void printHex(APDU const &, std::string const & = "");
-    static void printHex(byte_t const *str, size_t size, std::string const & = "");
-};
-
 template<class DestT, class SrcT>
 byte_t parse_TLV(DestT *dest, SrcT *src, size_t &idx) {
     byte_t len = src[++idx];

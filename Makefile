@@ -8,7 +8,6 @@ LIBS= -lnfc
 
 SRC= main.cpp \
 	 ccinfo.cpp \
-	 tools.cpp \
 	 device_nfc.cpp
 
 OBJ=$(SRC:.cpp=.o)
