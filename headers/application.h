@@ -8,6 +8,7 @@ struct Application {
     byte_t aid[7] = {}; // Length should be from 5 up to 16
     char name[128] = {};
     APDU pdol = {0, {0}};
+    APDU log_entry = {0, {0}};
 };
 
 #endif // APPLICATION_H
