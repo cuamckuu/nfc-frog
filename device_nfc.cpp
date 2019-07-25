@@ -78,7 +78,7 @@ APDU DeviceNFC::select_application(Application &app) {
     byte_t const SELECT_APP_HEADER[] = {
         0x40, 0x01, // Pn532 InDataExchange
         0x00, 0xA4, // SELECT application
-        0x04, 0x00 // P1:By name, P2:_
+        0x04, 0x00  // P1:By name, P2:_
     };
 
     // Prepare the SELECT command
@@ -100,10 +100,24 @@ APDU DeviceNFC::select_application(Application &app) {
 
     APDU res = execute_command(command, size, "SELECT APP");
 
-    // Extract PDOL from SELECT response
+    // Extract Application info from SELECT response
     for (size_t i = 0; i+1 < res.size; i++) {
         if (res.data[i] == 0x9F && res.data[i+1] == 0x38) { // PDOL Tag
             app.pdol.size = parse_TLV(app.pdol.data, res.data, ++i);
+        } else if (res.data[i] == 0x50) { // Application name Tag (Card name)
+            parse_TLV(app.name, res.data, i);
+        } else if (res.data[i] == 0xBF && res.data[i+1] == 0x0C) { // File Control Information Tag
+            i += 2;
+            byte_t len = res.data[i++];
+
+            for (size_t j = 0; j+1 < len; ++j) {
+                if (res.data[i+j] == 0x9F && res.data[i+j+1] == 0x4D) { // LogEnrty Tag
+                    // Hard to use parse_TLV here, because we need to pass rvalue (i+j) by ref as third param
+                    app.log_entry.size = 2;
+                    app.log_entry.data[0] = res.data[i+j+2]; // LogEntry SFI
+                    app.log_entry.data[1] = res.data[i+j+3]; // MaxRecords in LogEntry file
+                }
+            }
         }
     }
 
