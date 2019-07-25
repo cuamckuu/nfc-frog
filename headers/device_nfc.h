@@ -43,6 +43,7 @@ class DeviceNFC {
     APDU select_application(Application &app);
     APDU read_record(byte_t sfi, byte_t record_number);
     APDU get_data(GetDataParam param2);
+    APDU get_processing_options(Application &app);
 
   private:
     nfc_target nt;

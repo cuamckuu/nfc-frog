@@ -244,6 +244,29 @@ APDU DeviceNFC::get_PDOL_related_data(APDU pdol) {
     return res;
 }
 
+APDU DeviceNFC::get_processing_options(Application &app) {
+    // Select application is required to get PDOL and call GPO, can't use GPO without it
+
+    byte_t gpo_command_template[] = {
+        0x40, 0x01, // PN532 Specific
+        0x80, 0xA8, 0x00, 0x00, // GET PROCESSING OPTIONS
+    };
+
+    byte_t command[256] = {0};
+    byte_t size = sizeof(gpo_command_template);
+
+    std::memcpy(command, gpo_command_template, size);
+
+    APDU data = get_PDOL_related_data(app.pdol);
+    command[size++] = 0x02 + data.size;
+    command[size++] = 0x83;
+    command[size++] = data.size;
+    std::memcpy(command+size, data.data, data.size);
+    size += data.size + 1;
+
+    return execute_command(command, size, "GET PROCESSING OPTIONS");
+}
+
 DeviceNFC::~DeviceNFC() {
     nfc_close(pnd);
     nfc_exit(context);

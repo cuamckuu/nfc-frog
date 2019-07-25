@@ -32,28 +32,11 @@ void brute_device_records(DeviceNFC &device, std::vector<Application> &list) {
     }
 }
 
-void get_processing_options(DeviceNFC &device, Application &app) {
-    // Select application is required to get PDOL and call GPO, can't use GPO without it
+void walk_through_gpo_files(DeviceNFC &device, Application &app) {
+    device.select_application(app);
+    APDU gpo = device.get_processing_options(app);
 
-    byte_t gpo_command_template[] = {
-        0x40, 0x01, // PN532 Specific
-        0x80, 0xA8, 0x00, 0x00, // GET PROCESSING OPTIONS
-    };
-
-    byte_t command[256] = {0};
-    byte_t size = sizeof(gpo_command_template);
-
-    std::memcpy(command, gpo_command_template, size);
-
-    APDU data = device.get_PDOL_related_data(app.pdol);
-    command[size++] = 0x02 + data.size;
-    command[size++] = 0x83;
-    command[size++] = data.size;
-    std::memcpy(command+size, data.data, data.size);
-    size += data.size + 1;
-
-    APDU gpo = device.execute_command(command, size, "GET PROCESSING OPTIONS");
-
+    // Find AFL tag to locate files on card
     size_t i = 0;
     while (i < gpo.size && gpo.data[i] != 0x94) {
         i++;
@@ -66,8 +49,8 @@ void get_processing_options(DeviceNFC &device, Application &app) {
 
     APDU afl = {0, {0}};
     afl.size = parse_TLV(afl.data, gpo.data, i);
-    std::cout << "\nGPO Results: \n";
 
+    std::cout << "\nGPO Results: \n";
     for (size_t j = 0; j < afl.size; j+=4) {
         byte_t sfi = afl.data[j] >> 3;
         byte_t from_sfi = afl.data[j+1];
@@ -119,9 +102,9 @@ int main(int argc, char *argv[]) {
         if (mode == Mode::fast || mode == Mode::full) {
             brute_device_records(device, list);
         } else if (mode == Mode::GPO) {
-            Application app = list[0];
-            device.select_application(app);
-            get_processing_options(device, app);
+            for (Application &app : list) {
+                walk_through_gpo_files(device, app);
+            }
         }
 
     } catch (std::exception &e) {
