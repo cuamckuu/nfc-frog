@@ -80,9 +80,14 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
     // Be careful, ret.data[0] == 0x00, due to libnfc, then real data comes
 
     if (ret.size > 3) {
-        std::cerr << "Answer from " << name << ": ";
+        std::cerr << GREEN("[Info]" << " Response from " << name << ": ");
         for (size_t i = 1; i < ret.size; ++i) {
-            std::cout << HEX(ret.data[i]) << " ";
+            if (i >= ret.size - 2) {
+                // Print colored status word to cerr
+                std::cerr << GREEN(HEX(ret.data[i])) << " ";
+            } else {
+                std::cout << HEX(ret.data[i]) << " ";
+            }
         }
         std::cout << std::endl;
     }

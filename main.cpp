@@ -22,12 +22,21 @@ void brute_device_records(DeviceNFC &device, std::vector<Application> &list) {
     }
 
     for (size_t sfi = CCInfo::_FROM_SFI; sfi <= CCInfo::_TO_SFI; ++sfi) {
+        bool file_exist = false;
         for (size_t record = CCInfo::_FROM_RECORD; record <= CCInfo::_TO_RECORD; ++record) {
             APDU res = device.read_record(sfi, record);
 
-            if (res.size >= 2 && res.data[1] == 0x6A && res.data[2] == 0x82) {
+            byte_t sw1 = res.data[res.size-2];
+            byte_t sw2 = res.data[res.size-1];
+
+            if (sw1 == 0x90 && sw2 == 0x00) {
+                file_exist = true;
+            } else if (sw1 == 0x6A && sw2 == 0x82) {
                 break; // FileNotExist at this SFI
             }
+        }
+        if (file_exist) {
+            std::cerr << std::endl;
         }
     }
 }
@@ -50,15 +59,16 @@ void walk_through_gpo_files(DeviceNFC &device, Application &app) {
     APDU afl = {0, {0}};
     afl.size = parse_TLV(afl.data, gpo.data, i);
 
-    std::cerr << "\nGPO Results: \n";
+    std::cerr << std::endl;
     for (size_t j = 0; j < afl.size; j+=4) {
         byte_t sfi = afl.data[j] >> 3;
-        byte_t from_sfi = afl.data[j+1];
-        byte_t to_sfi = afl.data[j+2];
+        byte_t from_record = afl.data[j+1];
+        byte_t to_record = afl.data[j+2];
 
-        std::cerr << "SFI " << HEX(sfi);
-        std::cerr << " with records from " << HEX(from_sfi);
-        std::cerr << " to " << HEX(to_sfi) << std::endl;
+        for (size_t record = from_record; record <= to_record; ++record) {
+            APDU res = device.read_record(sfi, record);
+        }
+        std::cerr << std::endl;
     }
 }
 
@@ -68,7 +78,7 @@ int main(int argc, char *argv[]) {
     Mode mode = Mode::UNKNOWN;
 
     if (argc == 1) {
-        std::cerr << "[Info] Use mode 'fast', 'full' or 'GPO'" << std::endl;
+        std::cerr << GREEN("[Info]") << " Use mode 'fast', 'full' or 'GPO'" << std::endl;
         return 0;
     }
 
@@ -81,18 +91,19 @@ int main(int argc, char *argv[]) {
     } else if (mode_str == "GPO") {
         mode = Mode::GPO;
     } else {
-        std::cerr << "[Error] Unknown mode" << std::endl;
+        std::cerr << RED("[Error]") << " Unknown mode" << std::endl;
         return 0;
     }
 
     try {
         DeviceNFC device;
-        std::cerr << "NFC reader: " << device.get_name() << " opened.\n";
+        std::cerr << GREEN("[Info]") << " NFC reader: " << device.get_name() << " opened.\n";
 
         while (!device.pool_target()) {
-            std::cerr << "Searching..." << std::endl;
+            std::cerr << GREEN("[Info]") << " Searching card..." << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
+        std::cerr << std::endl;
 
         std::vector<Application> list = device.load_applications_list();
 
