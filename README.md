@@ -17,7 +17,7 @@ sudo ./nfc-frog
 
 ```
 
-Project requires [libnfc(>= 1.7.1)](https://github.com/nfc-tools/libnfc#installation)
+Project requires [libnfc(>= 1.7.1)](https://github.com/nfc-tools/libnfc#installation) and Pn532 as NFC reader
 
 # Usage
 
