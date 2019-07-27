@@ -1,9 +1,9 @@
 # Nfc-frog
 > Kick-ass contactless credit card reader
 
-With `nfc-frog` you can extract data from many contactless EMV credit cards. Tested with: Visa, MasterCard, MIR (other cards should work too).
+With `nfc-frog` you can extract data from many contactless EMV credit cards. Also it supports mulitiple reading modes, so you can choose mode which suits you best.
 
-Also it supports mulitiple reading modes, so you can choose mode which suits you best.
+Tested with: Visa, MasterCard, MIR (other cards should work too).
 
 [![demo](https://asciinema.org/a/ZaCFZU2x9EN5gCAEvogPn4YGm.svg)](https://asciinema.org/a/ZaCFZU2x9EN5gCAEvogPn4YGm?autoplay=1)
 
@@ -27,7 +27,7 @@ Nfc-frog supports multiple modes for reading card data.
 
 This mode will call EMV command GET PROCESSING DATA and then it will read only files and record from command response.
 
-In other words, it will 'emulate' POS terminal reading
+In other words, it will 'emulate' POS terminal reading.
 
 ```bash
 sudo ./nfc-frog GPO
@@ -42,13 +42,12 @@ Both modes will iterate from SFI 1 to SFI 31 and for each existing file:
 - Fast mode will read info from record 1 to record 16.
 - Full mode will read info from record 1 to record 255.
 
-
 ```bash
 sudo ./nfc-frog fast # Fast brute mode
 sudo ./nfc-frog full # Full brute mode
 ```
 
-### Get only card data
+### Disable logging
 
 To get card data only, you should disable stderr output.
 
@@ -62,6 +61,6 @@ sudo ./nfc-frog fast 2>&-
 sudo ./nfc-frog fast 2>/dev/null
 ```
 
-You can parse card data after reading by using one of many online EMV decoders.
+### Parsing results
 
-I personally prefer [this one](http://www.emvlab.org/tlvutils/)
+You can parse card data after reading by using one of many online EMV decoders. I personally prefer [this one](http://www.emvlab.org/tlvutils/)
