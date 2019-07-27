@@ -1,6 +1,6 @@
 .PHONY: all cls compile run clean test
 
-EXECUTABLE= readcc
+EXECUTABLE= nfc-frog
 
 CXX= g++
 CXXFLAGS+= -std=c++11 -W -Wall -pedantic
