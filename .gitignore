@@ -1,2 +1,4 @@
 *.o
-readcc
+*.log
+nfc-frog
+tags

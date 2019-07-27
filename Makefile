@@ -1,27 +1,27 @@
+.PHONY: all cls compile run clean test
 
-NAME=	readcc
+EXECUTABLE= nfc-frog
 
-SRC=	main.cc \
-	applicationhelper.cc \
-	ccinfo.cc \
-	tools.cc
+CXX= g++
+CXXFLAGS+= -std=c++11 -W -Wall -pedantic
+LIBS= -lnfc
 
-LIBS=	-lnfc
+SRC= main.cpp \
+	 ccinfo.cpp \
+	 device_nfc.cpp
 
-OBJ=$(SRC:.cc=.o)
+OBJ=$(SRC:.cpp=.o)
 
-CC=	g++
+all: cls compile clean
 
-CFLAGS+= -W -Wall -pedantic
+cls:
+	clear
 
-CXXFLAGS+=	-std=c++0x
-
-$(NAME): $(OBJ)
-	$(CC) -o $(NAME) $(OBJ) $(LIBS)
-
-all: $(NAME)
+compile: $(OBJ)
+	$(CXX) -o $(EXECUTABLE) $(OBJ) $(LIBS)
 
 clean:
 	rm -rf $(OBJ) $(NAME)
 
-re:	clean all
+run:
+	./$(EXECUTABLE)
