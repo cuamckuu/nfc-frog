@@ -7,7 +7,6 @@ CXXFLAGS+= -std=c++11 -W -Wall -pedantic
 LIBS= -lnfc
 
 SRC= main.cpp \
-	 ccinfo.cpp \
 	 device_nfc.cpp
 
 OBJ=$(SRC:.cpp=.o)

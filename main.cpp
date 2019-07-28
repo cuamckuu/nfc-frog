@@ -9,21 +9,20 @@ extern "C" {
 #include <thread>
 
 #include "headers/application.h"
-#include "headers/ccinfo.h"
 #include "headers/device_nfc.h"
 #include "headers/tools.h"
 
-void brute_device_records(DeviceNFC &device, std::vector<Application> &list) {
-    // Select application is required before READ RECORD calls
-    for (size_t i = 0; i < list.size(); i++) {
-        Application &app = list[i];
-        APDU res = device.select_application(app);
-        std::cerr << std::endl;
-    }
+enum Mode { fast, full, GPO, UNKNOWN };
 
-    for (size_t sfi = CCInfo::_FROM_SFI; sfi <= CCInfo::_TO_SFI; ++sfi) {
+void brute_device_records(DeviceNFC &device, Application &app, Mode mode) {
+    device.select_application(app);
+    std::cerr << std::endl;
+
+    size_t to_record = (mode == Mode::fast ? 16:255);
+
+    for (size_t sfi = 1; sfi <= 31; ++sfi) {
         bool file_exist = false;
-        for (size_t record = CCInfo::_FROM_RECORD; record <= CCInfo::_TO_RECORD; ++record) {
+        for (size_t record = 1; record <= to_record; ++record) {
             APDU res = device.read_record(sfi, record);
 
             byte_t sw1 = res.data[res.size-2];
@@ -66,13 +65,11 @@ void walk_through_gpo_files(DeviceNFC &device, Application &app) {
         byte_t to_record = afl.data[j+2];
 
         for (size_t record = from_record; record <= to_record; ++record) {
-            APDU res = device.read_record(sfi, record);
+            device.read_record(sfi, record);
         }
         std::cerr << std::endl;
     }
 }
-
-enum Mode { fast, full, GPO, UNKNOWN };
 
 int main(int argc, char *argv[]) {
     Mode mode = Mode::UNKNOWN;
@@ -87,7 +84,6 @@ int main(int argc, char *argv[]) {
         mode = Mode::fast;
     } else if (mode_str == "full") {
         mode = Mode::full;
-        CCInfo::set_full_mode();
     } else if (mode_str == "GPO") {
         mode = Mode::GPO;
     } else {
@@ -108,7 +104,9 @@ int main(int argc, char *argv[]) {
         std::vector<Application> list = device.load_applications_list();
 
         if (mode == Mode::fast || mode == Mode::full) {
-            brute_device_records(device, list);
+            for (Application &app : list) {
+                brute_device_records(device, app, mode);
+            }
         } else if (mode == Mode::GPO) {
             for (Application &app : list) {
                 walk_through_gpo_files(device, app);
