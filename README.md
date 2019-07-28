@@ -64,3 +64,6 @@ sudo ./nfc-frog fast 2>/dev/null
 ### Parsing results
 
 You can parse card data after reading by using one of many online EMV decoders. I personally prefer [this one](http://www.emvlab.org/tlvutils/)
+
+Example with data from my MIR card:
+![Parsed Data Example](https://pp.userapi.com/c854324/v854324574/acf4c/4t0KRDZhN8o.jpg)
