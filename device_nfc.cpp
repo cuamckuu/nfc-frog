@@ -211,7 +211,7 @@ APDU DeviceNFC::get_data(GetDataParam param2) {
         0x00 // Le
     };
 
-    return execute_command(command, sizeof(command), "GET DATA");
+    return execute_command(command, sizeof(command), "GET DATA", true /*is_verbose*/);
 }
 
 APDU DeviceNFC::get_PDOL_related_data(APDU pdol) {
@@ -270,6 +270,25 @@ APDU DeviceNFC::get_processing_options(Application &app) {
     size += data.size + 1;
 
     return execute_command(command, size, "GET PROCESSING OPTIONS");
+}
+
+APDU DeviceNFC::get_challenge() {
+    byte_t command[] = {
+        0x40, 0x01, // PN532 Specific
+        0x00, 0x84, 0x00, 0x00, 0x00 // GET CHALLENGE
+    };
+
+    return execute_command(command, sizeof(command), "GET CHALLENGE", true);
+}
+
+APDU DeviceNFC::verify() {
+    byte_t command[] = {
+        0x40, 0x01,
+        //0x00, 0x20, 0x00, 0x80, 0x08, 0x24, 0x60, 0x28, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF // Real PIN
+        0x00, 0x20, 0x00, 0x80, 0x08, 0x24, 0x12, 0x34, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+
+    return execute_command(command, sizeof(command), "VERIFY", true);
 }
 
 DeviceNFC::~DeviceNFC() {

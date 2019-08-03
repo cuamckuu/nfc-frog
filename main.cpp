@@ -12,7 +12,7 @@ extern "C" {
 #include "headers/device_nfc.h"
 #include "headers/tools.h"
 
-enum Mode { fast, full, GPO, UNKNOWN };
+enum Mode { fast, full, GPO, data, challenge, verify, UNKNOWN };
 
 void brute_device_records(DeviceNFC &device, Application &app, Mode mode) {
     device.select_application(app);
@@ -71,6 +71,36 @@ void walk_through_gpo_files(DeviceNFC &device, Application &app) {
     }
 }
 
+void get_data_command(DeviceNFC &device, Application &app) {
+    device.select_application(app);
+
+    std::cerr << "\nATC: \n";
+    device.get_data(GetDataParam::transaction_counter);
+
+    std::cerr << "\nLast Online ATC Register: \n";
+    device.get_data(GetDataParam::last_online_register);
+
+    std::cerr << "\nPIN counter: \n";
+    device.get_data(GetDataParam::pin_counter);
+
+    std::cerr << "\nLog Format: \n";
+    device.get_data(GetDataParam::log_format);
+}
+
+void get_challenge_command(DeviceNFC &device, Application &app) {
+    device.select_application(app);
+
+    std::cerr << "\nChallenge: \n";
+    device.get_challenge();
+}
+
+void verify_command(DeviceNFC &device, Application &app) {
+    device.select_application(app);
+
+    device.get_processing_options(app);
+    device.verify();
+}
+
 int main(int argc, char *argv[]) {
     Mode mode = Mode::UNKNOWN;
 
@@ -86,6 +116,12 @@ int main(int argc, char *argv[]) {
         mode = Mode::full;
     } else if (mode_str == "GPO") {
         mode = Mode::GPO;
+    } else if (mode_str == "data") {
+        mode = Mode::data;
+    } else if (mode_str == "challenge") {
+        mode = Mode::challenge;
+    } else if (mode_str == "verify") {
+        mode = Mode::verify;
     } else {
         std::cerr << RED("[Error]") << " Unknown mode" << std::endl;
         return 0;
@@ -111,6 +147,14 @@ int main(int argc, char *argv[]) {
             for (Application &app : list) {
                 walk_through_gpo_files(device, app);
             }
+        } else if (mode == Mode::data) {
+            for (Application &app : list) {
+                get_data_command(device, app);
+            }
+        } else if (mode == Mode::challenge) {
+            get_challenge_command(device, list[0]);
+        } else if (mode == Mode::verify) {
+            verify_command(device, list[0]);
         }
 
     } catch (std::exception &e) {

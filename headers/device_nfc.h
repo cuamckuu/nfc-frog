@@ -20,10 +20,10 @@ extern "C" {
 #include "tools.h"
 
 enum GetDataParam : byte_t {
-    log_format = 0x4F,
     transaction_counter = 0x36,
+    last_online_register = 0x13,
     pin_counter = 0x17,
-    last_online_register = 0x13
+    log_format = 0x4F
 };
 
 class DeviceNFC {
@@ -44,6 +44,8 @@ class DeviceNFC {
     APDU read_record(byte_t sfi, byte_t record_number);
     APDU get_data(GetDataParam param2);
     APDU get_processing_options(Application &app);
+    APDU get_challenge();
+    APDU verify();
 
   private:
     nfc_target nt;
