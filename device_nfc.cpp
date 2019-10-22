@@ -75,6 +75,13 @@ std::string DeviceNFC::get_name() {
 }
 
 APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *name, bool verbose) {
+
+    std::cerr << "[Executing] ";
+    for (size_t i = 2; i < size; i++) {
+        std::cerr << HEX(command[i]) << " ";
+    }
+    std::cerr << std::endl;
+
     APDU ret = {0, {0}};
     ret.size = pn53x_transceive(pnd, command, size, ret.data, sizeof(ret.data), 0);
     // Be careful, ret.data[0] == 0x00, due to libnfc, then real data comes
@@ -82,7 +89,7 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
     if (ret.size > 3 || verbose == true) {
         std::cerr << GREEN("[Info]" << " Response from " << name << ": ");
         for (size_t i = 1; i < ret.size; ++i) {
-            if (i >= ret.size - 2) {
+            if (i >= ret.size - 2 && !verbose) {
                 // Print colored status word to cerr
                 std::cerr << GREEN(HEX(ret.data[i])) << " ";
             } else {
