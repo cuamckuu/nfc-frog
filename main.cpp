@@ -7,12 +7,16 @@ extern "C" {
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <sstream>
+
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #include "headers/application.h"
 #include "headers/device_nfc.h"
 #include "headers/tools.h"
 
-enum Mode { fast, full, GPO, data, challenge, verify, UNKNOWN };
+enum Mode { fast, full, GPO, data, challenge, verify, shell, UNKNOWN };
 
 void brute_device_records(DeviceNFC &device, Application &app, Mode mode) {
     device.select_application(app);
@@ -91,7 +95,9 @@ void get_challenge_command(DeviceNFC &device, Application &app) {
     device.select_application(app);
 
     std::cerr << "\nChallenge: \n";
-    device.get_challenge();
+    for (int i = 0; i < 100; i++) {
+        device.get_challenge();
+    }
 }
 
 void verify_command(DeviceNFC &device, Application &app) {
@@ -99,6 +105,41 @@ void verify_command(DeviceNFC &device, Application &app) {
 
     device.get_processing_options(app);
     device.verify();
+}
+
+void start_shell_mode(DeviceNFC &device) {
+    std::cerr << GREEN("[Info] ") << "Interactive mode started. Enter EMV commands.\n";
+
+	char *line;
+	while ((line = readline("\n[Send] ")) != nullptr) {
+		if (*line) add_history(line);
+
+        if (line[0] == '#') {
+            continue;
+        }
+
+		std::stringstream ss(line);
+
+		APDU command;
+		command.data[0] = 0x40;
+		command.data[1] = 0x01;
+		command.size = 2;
+
+
+		int val;
+		while (ss >> std::hex >> val) {
+			if (val > 255) {
+				std::cerr << RED("[Error] ") << "Met value greater than 0xFF\n";
+				break;
+			}
+			command.data[command.size] = static_cast<byte_t>(val);
+			command.size++;
+		}
+		device.execute_command(command.data, command.size, "User command", true);
+
+		free(line);
+	}
+
 }
 
 int main(int argc, char *argv[]) {
@@ -122,6 +163,8 @@ int main(int argc, char *argv[]) {
         mode = Mode::challenge;
     } else if (mode_str == "verify") {
         mode = Mode::verify;
+    } else if (mode_str == "shell") {
+        mode = Mode::shell;
     } else {
         std::cerr << RED("[Error]") << " Unknown mode" << std::endl;
         return 0;
@@ -137,24 +180,30 @@ int main(int argc, char *argv[]) {
         }
         std::cerr << std::endl;
 
-        std::vector<Application> list = device.load_applications_list();
 
         if (mode == Mode::fast || mode == Mode::full) {
+            std::vector<Application> list = device.load_applications_list();
             for (Application &app : list) {
                 brute_device_records(device, app, mode);
             }
         } else if (mode == Mode::GPO) {
+            std::vector<Application> list = device.load_applications_list();
             for (Application &app : list) {
                 walk_through_gpo_files(device, app);
             }
         } else if (mode == Mode::data) {
+            std::vector<Application> list = device.load_applications_list();
             for (Application &app : list) {
                 get_data_command(device, app);
             }
         } else if (mode == Mode::challenge) {
+            std::vector<Application> list = device.load_applications_list();
             get_challenge_command(device, list[0]);
         } else if (mode == Mode::verify) {
+            std::vector<Application> list = device.load_applications_list();
             verify_command(device, list[0]);
+        } else if (mode == Mode::shell) {
+            start_shell_mode(device);
         }
 
     } catch (std::exception &e) {

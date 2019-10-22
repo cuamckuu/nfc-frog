@@ -4,7 +4,7 @@ EXECUTABLE= nfc-frog
 
 CXX= g++
 CXXFLAGS+= -std=c++11 -W -Wall -pedantic
-LIBS= -lnfc
+LIBS= -lnfc -lreadline
 
 SRC= main.cpp \
 	 device_nfc.cpp
