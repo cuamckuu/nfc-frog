@@ -27,9 +27,11 @@
     std::string const green("\033[0;32m");
     std::string const reset("\033[0m");
 
-    #define GREEN(x) green << x << reset
-    #define RED(x) red << x << reset
+    //#define GREEN(x) green << x << reset
+    //#define RED(x) red << x << reset
 
+    #define GREEN(x) x
+    #define RED(x) x
 #endif
 
 
