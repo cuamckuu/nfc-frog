@@ -18,7 +18,8 @@ std::map<unsigned short, byte_t const *> DeviceNFC::PDOLValues = {
     {0x9A,   new byte_t[3]{0x19, 0x01, 0x01}}, // Transaction Date
     {0x9C,   new byte_t[1]{0x00}},             // Transaction Type
     {0x98,   new byte_t[20]{0}},             // Transaction Cert
-    {0x9F37, new byte_t[4]{0x82, 0x3D, 0xDE, 0x7A}} // Unpredictable number
+    {0x9F37, new byte_t[4]{0x82, 0x3D, 0xDE, 0x7A}}, // Unpredictable number
+    {0x9F66, new byte_t[4]{0xC8, 0x80, 0x00, 0x00}} // Terminal Transaction Qualifiers (TTQ) 
 };
 
 
