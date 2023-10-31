@@ -80,6 +80,12 @@ APDU DeviceNFC::execute_command(byte_t const *command, size_t size, char const *
     ret.size = pn53x_transceive(pnd, command, size, ret.data, sizeof(ret.data), 0);
     // Be careful, ret.data[0] == 0x00, due to libnfc, then real data comes
 
+    if (ret.size > MAX_FRAME_LEN) {
+        std::cerr << RED("[Error]") << " Application level error" << std::endl;
+        ret.size = 0;
+        return ret;
+    }
+
     if (ret.size > 3) {
         std::cerr << GREEN("[Info]" << " Response from " << name << ": ");
         for (size_t i = 1; i < ret.size; ++i) {
